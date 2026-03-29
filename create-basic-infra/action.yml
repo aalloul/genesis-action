@@ -1,0 +1,61 @@
+name: 'Genesis – Create Basic Infrastructure'
+description: >
+  Renders Terraform files for a new organisation from a genesis_config.yml
+  using the genesis-api Docker image hosted on GHCR.
+  The calling repository must be listed in the genesis-api package access list
+  on GHCR, and the workflow must declare `permissions: packages: read`.
+
+inputs:
+  token:
+    description: >
+      GitHub token with packages:read permission.
+      Defaults to the calling repository GITHUB_TOKEN. The repository this
+      token belongs to must be added to the genesis-api GHCR package access
+      list by your Genesis administrator.
+    required: false
+    default: ${{ github.token }}
+
+  cfg:
+    description: >
+      Path to the genesis config YAML file, relative to the repository root
+      (e.g. "genesis_config.yml").
+    required: true
+
+  output_dir:
+    description: >
+      Directory where the rendered Terraform files will be written, relative
+      to the repository root (e.g. "terraform-out"). Created automatically
+      if it does not exist.
+    required: true
+
+  version:
+    description: >
+      genesis-api image version to use (e.g. "1.2.3" or "1.2.3-rc.1").
+      Defaults to "latest" (most recent stable release).
+    required: false
+    default: 'latest'
+
+runs:
+  using: composite
+  steps:
+    - name: Log in to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.token }}
+
+    - name: Create output directory
+      shell: bash
+      run: mkdir -p "${{ github.workspace }}/${{ inputs.output_dir }}"
+
+    - name: Run genesis create-basic-infra
+      shell: bash
+      run: |
+        docker run --rm \
+          -v "${{ github.workspace }}:/workspace" \
+          "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
+          create-basic-infra \
+          --cfg "/workspace/${{ inputs.cfg }}" \
+          --output-dir "/workspace/${{ inputs.output_dir }}"
+
