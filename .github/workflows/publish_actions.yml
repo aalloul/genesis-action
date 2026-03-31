@@ -28,9 +28,6 @@ jobs:
           enable-cache: true
           version: "0.11.3"
 
-#      - name: Install check-jsonschema
-#        run: uvx install check-jsonschema
-
       - name: Validate action.yml files
         run: |
           find . -name 'action.yml' -not -path './.git/*' | while read -r f; do
@@ -76,7 +73,7 @@ jobs:
           rm -f .next-version
   
           if [ -n "$VERSION" ]; then
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
             echo "released=true"    >> "$GITHUB_OUTPUT"
             echo "✅ Released: $VERSION"
           else
