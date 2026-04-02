@@ -59,7 +59,7 @@ runs:
 
     - name: Create terraform directory
       shell: bash
-      run: mkdir -p "${{ github.workspace }}/${{ variables.base_infra_terraform_dir }}"
+      run: mkdir -p "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
 
     - name: Generate Terraform files
       shell: bash
@@ -69,14 +69,14 @@ runs:
           "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
           create-basic-infra \
           --cfg "${{ github.workspace }}/${{ inputs.basic_infra_yaml_file }}" \
-          --output-dir "${{ github.workspace }}/${{ inputs.output_dir }}"
+          --output-dir "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
 
     - name: Store generated Terraform files as an artifact
       uses: actions/upload-artifact@v7
-      if: ${{ debug == 'true' }}
+      if: ${{ inputs.debug == 'true' }}
       with:
         name: basic-infra-terraform
-        path: '${{ github.workspace }}/${{ variables.base_infra_terraform_dir }}'
+        path: '${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}'
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v4
@@ -85,15 +85,15 @@ runs:
 
     - name: Terraform Init & validate
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ variables.base_infra_terraform_dir }}
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
       run: terraform init -no-color && terraform validate -no-color
 
     - name: Terraform Plan
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ variables.base_infra_terraform_dir }}
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
       run: terraform plan -no-color -out=tfplan
 
     - name: Terraform apply
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ variables.base_infra_terraform_dir }}
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
       run: terraform apply -no-color tfplan
