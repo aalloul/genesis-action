@@ -1,0 +1,85 @@
+name: Publish actions
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Validate action definitions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: '3.13'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          version: "0.11.3"
+
+#      - name: Install check-jsonschema
+#        run: uvx install check-jsonschema
+
+      - name: Validate action.yml files
+        run: |
+          find . -name 'action.yml' -not -path './.git/*' | while read -r f; do
+            echo "Validating $f"
+            uvx check-jsonschema --schemafile https://json.schemastore.org/github-action.json "$f"
+          done
+
+  release:
+    name: Release
+    if: github.event_name == 'push'
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Install semantic-release
+        shell: bash
+        run: |
+          npm install --no-save \
+            semantic-release@24 \
+            @semantic-release/commit-analyzer@13 \
+            @semantic-release/release-notes-generator@14 \
+            @semantic-release/github@12 \
+            @semantic-release/exec@7
+
+      - name: Publish release and capture version
+        id: release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx semantic-release
+  
+          VERSION=$(cat .next-version 2>/dev/null || echo "")
+          rm -f .next-version
+  
+          if [ -n "$VERSION" ]; then
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "released=true"    >> "$GITHUB_OUTPUT"
+            echo "✅ Released: $VERSION"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+            echo "ℹ️  No releasable commits — skipping release"
+          fi

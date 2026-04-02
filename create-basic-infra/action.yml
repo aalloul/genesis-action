@@ -15,25 +15,37 @@ inputs:
     required: false
     default: ${{ github.token }}
 
-  cfg:
+  basic_infra_yaml_file:
     description: >
-      Path to the genesis config YAML file, relative to the repository root
+      Path to the genesis basic infra config YAML file, relative to the repository root
       (e.g. "genesis_config.yml").
-    required: true
-
-  output_dir:
-    description: >
-      Directory where the rendered Terraform files will be written, relative
-      to the repository root (e.g. "terraform-out"). Created automatically
-      if it does not exist.
     required: true
 
   version:
     description: >
       genesis-api image version to use (e.g. "1.2.3" or "1.2.3-rc.1").
       Defaults to "latest" (most recent stable release).
+    required: true
+
+  base_infra_terraform_dir:
+    default: "base_infra_terraform"
+    description: >
+      Directory where the generated Terraform files will be stored, relative to the repository root.
+      Defaults to "base_infra_terraform".
     required: false
-    default: 'latest'
+
+  terraform_version:
+    description: >
+      Terraform version constraint to use for the "Setup Terraform" step.
+    required: false
+    default: "1.14.0"
+
+  debug:
+    description: >
+      If true, the generated Terraform files will be uploaded as a workflow artifact for debugging purposes.
+      Defaults to false.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -45,17 +57,43 @@ runs:
         username: ${{ github.actor }}
         password: ${{ inputs.token }}
 
-    - name: Create output directory
+    - name: Create terraform directory
       shell: bash
-      run: mkdir -p "${{ github.workspace }}/${{ inputs.output_dir }}"
+      run: mkdir -p "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
 
-    - name: Run genesis create-basic-infra
+    - name: Generate Terraform files
       shell: bash
       run: |
         docker run --rm \
           -v "${{ github.workspace }}:/workspace" \
           "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
           create-basic-infra \
-          --cfg "/workspace/${{ inputs.cfg }}" \
-          --output-dir "/workspace/${{ inputs.output_dir }}"
+          --cfg "${{ github.workspace }}/${{ inputs.basic_infra_yaml_file }}" \
+          --output-dir "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
 
+    - name: Store generated Terraform files as an artifact
+      uses: actions/upload-artifact@v7
+      if: ${{ inputs.debug == 'true' }}
+      with:
+        name: basic-infra-terraform
+        path: '${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}'
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v4
+      with:
+        terraform_version: ${{ inputs.terraform_version }}
+
+    - name: Terraform Init & validate
+      shell: bash
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
+      run: terraform init -no-color && terraform validate -no-color
+
+    - name: Terraform Plan
+      shell: bash
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
+      run: terraform plan -no-color -out=tfplan
+
+    - name: Terraform apply
+      shell: bash
+      working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
+      run: terraform apply -no-color tfplan
