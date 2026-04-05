@@ -54,6 +54,13 @@ inputs:
     required: false
     default: "false"
 
+  run_terraform_apply:
+    description: >
+      If true, the workflow will run `terraform apply` after `terraform plan`.
+      Defaults to true as this is meant as a debugging feature.
+    required: false
+    default: "true"
+
 runs:
   using: composite
   steps:
@@ -104,4 +111,5 @@ runs:
     - name: Terraform apply
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}
+      if: ${{ inputs.run_terraform_apply == 'true' }}
       run: terraform apply -no-color tfplan
