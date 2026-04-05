@@ -75,8 +75,8 @@ runs:
           -v "${{ github.workspace }}:/workspace" \
           "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
           create-basic-infra \
-          --cfg "${{ github.workspace }}/${{ inputs.basic_infra_yaml_file }}" \
-          --output-dir "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
+          --cfg "/workspace/${{ inputs.basic_infra_yaml_file }}" \
+          --output-dir "/workspace/${{ inputs.base_infra_terraform_dir }}"
 
     - name: Store generated Terraform files as an artifact
       uses: actions/upload-artifact@v7
