@@ -55,3 +55,5 @@ runs:
         project_id: ${{ inputs.gcp_project }}
         token_format: ${{ inputs.token_format }}
         audience: ${{ inputs.audience == '' && '' || inputs.audience }}
+        create_credentials_file: true
+        export_environment_variables: true
