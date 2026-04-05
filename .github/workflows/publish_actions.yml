@@ -28,9 +28,6 @@ jobs:
           enable-cache: true
           version: "0.11.3"
 
-#      - name: Install check-jsonschema
-#        run: uvx install check-jsonschema
-
       - name: Validate action.yml files
         run: |
           find . -name 'action.yml' -not -path './.git/*' | while read -r f; do
