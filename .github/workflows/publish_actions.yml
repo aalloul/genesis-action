@@ -76,7 +76,7 @@ jobs:
           rm -f .next-version
   
           if [ -n "$VERSION" ]; then
-            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
             echo "released=true"    >> "$GITHUB_OUTPUT"
             echo "✅ Released: $VERSION"
           else
