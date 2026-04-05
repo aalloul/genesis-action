@@ -15,6 +15,13 @@ inputs:
     required: false
     default: ${{ github.token }}
 
+  username:
+    description: >
+      GitHub username associated with the provided token.
+      Defaults to the calling repository GITHUB_ACTOR.
+    required: false
+    default: ${{ github.actor }}
+
   basic_infra_yaml_file:
     description: >
       Path to the genesis basic infra config YAML file, relative to the repository root
@@ -54,7 +61,7 @@ runs:
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
-        username: ${{ github.actor }}
+        username: ${{ inputs.username }}
         password: ${{ inputs.token }}
 
     - name: Create terraform directory
@@ -65,11 +72,12 @@ runs:
       shell: bash
       run: |
         docker run --rm \
+          --user $(id -u):$(id -g) \
           -v "${{ github.workspace }}:/workspace" \
           "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
           create-basic-infra \
-          --cfg "${{ github.workspace }}/${{ inputs.basic_infra_yaml_file }}" \
-          --output-dir "${{ github.workspace }}/${{ inputs.base_infra_terraform_dir }}"
+          --cfg "/workspace/${{ inputs.basic_infra_yaml_file }}" \
+          --output-dir "/workspace/${{ inputs.base_infra_terraform_dir }}"
 
     - name: Store generated Terraform files as an artifact
       uses: actions/upload-artifact@v7
