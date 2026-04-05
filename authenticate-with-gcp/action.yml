@@ -1,0 +1,57 @@
+name: 'Genesis – Authenticate with GCP'
+description: >
+  Authenticates the workflow with Google Cloud Platform using Workload Identity Federation (WIF). 
+  The resulting credentials are available to all subsequent steps in the job.
+
+inputs:
+  workload_identity_provider:
+    description: >
+      The full resource name of the Workload Identity Provider to use for
+      authentication (e.g. "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider").
+    required: true
+
+  service_account:
+    description: >
+      The email address of the GCP service account to impersonate
+      (e.g. "my-sa@my-project.iam.gserviceaccount.com").
+    required: true
+
+  gcp_project:
+    description: >
+      The GCP project ID to authenticate against (e.g. "my-gcp-project-id").
+    required: true
+
+  token_format:
+    description: >
+      The format of the generated token. Use "access_token" for most GCP API
+      calls and Terraform. Use "id_token" when calling Cloud Run or other
+      services that require an OIDC ID token.
+    required: false
+    default: "access_token"
+
+  audience:
+    description: >
+      The audience for the generated ID token. Only relevant when
+      token_format is "id_token". Defaults to the calling URL of the service
+      being invoked.
+    required: false
+    default: ""
+
+outputs:
+  access_token:
+    description: >
+      The GCP access token. Only populated when token_format is "access_token".
+    value: ${{ steps.auth.outputs.access_token }}
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate to GCP via WIF
+      id: auth
+      uses: google-github-actions/auth@v2
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        service_account: ${{ inputs.service_account }}
+        project_id: ${{ inputs.gcp_project }}
+        token_format: ${{ inputs.token_format }}
+        audience: ${{ inputs.audience == '' && '' || inputs.audience }}
