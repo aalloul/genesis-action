@@ -28,7 +28,7 @@ inputs:
       (e.g. "genesis_config.yml").
     required: true
 
-  version:
+  genesis_version:
     description: >
       genesis-api image version to use (e.g. "1.2.3" or "1.2.3-rc.1").
       Defaults to "latest" (most recent stable release).
@@ -81,7 +81,7 @@ runs:
         docker run --rm \
           --user $(id -u):$(id -g) \
           -v "${{ github.workspace }}:/workspace" \
-          "ghcr.io/aalloul/genesis-api:${{ inputs.version }}" \
+          "ghcr.io/aalloul/genesis-api:${{ inputs.genesis_version }}" \
           create-basic-infra \
           --cfg "/workspace/${{ inputs.basic_infra_yaml_file }}" \
           --output-dir "/workspace/${{ inputs.base_infra_terraform_dir }}"
