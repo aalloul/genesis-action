@@ -48,7 +48,7 @@ runs:
   using: composite
   steps:
     - name: Direct WIF auth
-      id: auth
+      id: direct_wif_auth
       uses: google-github-actions/auth@v2
       if: ${{ inputs.service_account == '' && inputs.token_format == '' }}
       with:
@@ -56,7 +56,7 @@ runs:
         project_id: ${{ inputs.gcp_project }}
 
     - name: WIF auth through a service account impersonation
-      id: auth
+      id: wif_auth_impersonation
       uses: google-github-actions/auth@v2
       if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
       with:
@@ -64,7 +64,7 @@ runs:
         project_id: ${{ inputs.gcp_project }}
 
     - name: WIF auth through impersonation with access token
-      id: auth
+      id: wif_auth_impersonation_access_token
       uses: google-github-actions/auth@v2
       if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
       with:
@@ -74,7 +74,7 @@ runs:
         token_format: ${{ inputs.token_format }}
 
     - name: WIF auth through impersonation with ID token
-      id: auth
+      id: wif_auth_impersonation_id_token
       uses: google-github-actions/auth@v2
       if: ${{ inputs.service_account != '' && inputs.token_format == 'id_token' }}
       with:
