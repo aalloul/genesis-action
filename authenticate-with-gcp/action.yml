@@ -10,16 +10,17 @@ inputs:
       authentication (e.g. "projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider").
     required: true
 
-  service_account:
-    description: >
-      The email address of the GCP service account to impersonate
-      (e.g. "my-sa@my-project.iam.gserviceaccount.com").
-    required: true
-
   gcp_project:
     description: >
       The GCP project ID to authenticate against (e.g. "my-gcp-project-id").
     required: true
+
+  service_account:
+    description: >
+      The email address of the GCP service account to impersonate
+      (e.g. "my-sa@my-project.iam.gserviceaccount.com").
+    required: false
+    default: ""
 
   token_format:
     description: >
@@ -27,7 +28,7 @@ inputs:
       calls and Terraform. Use "id_token" when calling Cloud Run or other
       services that require an OIDC ID token.
     required: false
-    default: "access_token"
+    default: ""
 
   audience:
     description: >
@@ -46,9 +47,39 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Authenticate to GCP via WIF
+    - name: Direct WIF auth
       id: auth
       uses: google-github-actions/auth@v2
+      if: ${{ inputs.service_account == '' && inputs.token_format == '' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         project_id: ${{ inputs.gcp_project }}
+
+    - name: WIF auth through a service account impersonation
+      id: auth
+      uses: google-github-actions/auth@v2
+      if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        project_id: ${{ inputs.gcp_project }}
+
+    - name: WIF auth through impersonation with access token
+      id: auth
+      uses: google-github-actions/auth@v2
+      if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        project_id: ${{ inputs.gcp_project }}
+        service_account: ${{ inputs.service_account }}
+        token_format: ${{ inputs.token_format }}
+
+    - name: WIF auth through impersonation with ID token
+      id: auth
+      uses: google-github-actions/auth@v2
+      if: ${{ inputs.service_account != '' && inputs.token_format == 'id_token' }}
+      with:
+        workload_identity_provider: ${{ inputs.workload_identity_provider }}
+        project_id: ${{ inputs.gcp_project }}
+        service_account: ${{ inputs.service_account }}
+        token_format: ${{ inputs.token_format }}
+        id_token_audience: ${{ inputs.audience }}
