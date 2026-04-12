@@ -7,7 +7,7 @@ Public GitHub Actions for the Genesis API. Each action lives in its own subdirec
 | Action | Description |
 |---|---|
 | [`authenticate-with-gcp`](./authenticate-with-gcp/) | Authenticates the workflow with GCP using Workload Identity Federation (WIF) |
-| [`create-basic-infra`](./create-basic-infra/) | Renders Terraform files for a new organisation from a `genesis_config.yml` |
+| [`create-basic-infra`](genesis-infra-api/) | Renders Terraform files for a new organisation from a `genesis_config.yml` |
 
 ## `authenticate-with-gcp`
 
