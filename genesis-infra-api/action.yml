@@ -185,9 +185,6 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       run: |
-        echo "Content of terraform_output_dir:"
-        ls
-        echo "Terraform init:"
         terraform init && terraform validate -no-color
 
     - name: Terraform Plan
