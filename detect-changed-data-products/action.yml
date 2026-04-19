@@ -47,7 +47,7 @@ runs:
           fi
           files=$(echo "$INPUT_CONFIG_FILES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | sed 's|^|data_products/|' | jq -R . | jq -sc .)
         else
-          files=$(git diff --name-only origin/main HEAD -- data_products/ | grep '\.yml$' | jq -R . | jq -sc .)
+          files=$(git diff --name-only origin/main HEAD -- data_products/ | { grep '\.yml$' || true; } | jq -R . | jq -sc .)
         fi
         echo "config_files=$files" >> "$GITHUB_OUTPUT"
         echo "INFO: Detected config files: $files"
