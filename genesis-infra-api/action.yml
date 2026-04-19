@@ -109,8 +109,6 @@ inputs:
     description: Workload Identity Federation provider resource name.
     required: true
 
-# TODO add a step to check all required env variables and secrets are set
-
 runs:
   using: composite
   steps:
@@ -125,24 +123,30 @@ runs:
       shell: bash
       run: mkdir -p "${{ github.workspace }}/${{ inputs.terraform_output_dir }}"
 
+    - name: Create env file for Docker
+      shell: bash
+      run: |
+        cat <<EOF > "${{ runner.temp }}/genesis.env"
+        FOLDER_ID=${{ inputs.folder_id }}
+        CLOUD_PROVIDER=${{ inputs.cloud_provider }}
+        GCP_REGION=${{ inputs.gcp_region }}
+        GCP_ZONE=${{ inputs.gcp_zone }}
+        ORGANIZATION_SHORT_NAME=${{ inputs.organization_short_name }}
+        SEED_PROJECT_ID=${{ inputs.seed_project_id }}
+        SEED_SERVICE_ACCOUNT=${{ inputs.seed_service_account }}
+        BILLING_ACCOUNT=${{ inputs.billing_account }}
+        GCP_SEED_PROJECT=${{ inputs.gcp_seed_project }}
+        GCP_SERVICE_ACCOUNT=${{ inputs.gcp_service_account }}
+        GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}
+        EOF
+
     - name: Generate Terraform files
       shell: bash
-      env:
-        FOLDER_ID: ${{ inputs.folder_id }}
-        CLOUD_PROVIDER: ${{ inputs.cloud_provider }}
-        GCP_REGION: ${{ inputs.gcp_region }}
-        GCP_ZONE: ${{ inputs.gcp_zone }}
-        ORGANIZATION_SHORT_NAME: ${{ inputs.organization_short_name }}
-        SEED_PROJECT_ID: ${{ inputs.seed_project_id }}
-        SEED_SERVICE_ACCOUNT: ${{ inputs.seed_service_account }}
-        BILLING_ACCOUNT: ${{ inputs.billing_account }}
-        GCP_SEED_PROJECT: ${{ inputs.gcp_seed_project }}
-        GCP_SERVICE_ACCOUNT: ${{ inputs.gcp_service_account }}
-        GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ inputs.gcp_workload_identity_provider }}
       run: |
         docker run --rm \
           --user $(id -u):$(id -g) \
           -v "${{ github.workspace }}:/workspace" \
+          --env-file "${{ runner.temp }}/genesis.env" \
           "ghcr.io/aalloul/genesis-api:${{ inputs.genesis_version }}" \
           ${{ inputs.action }} \
           --cfg "/workspace/${{ inputs.config_yml_file }}" \
