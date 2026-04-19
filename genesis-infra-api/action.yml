@@ -43,6 +43,12 @@ inputs:
       Defaults to "latest" (most recent stable release).
     required: true
 
+  terraform_bucket:
+    description: >
+      GCS bucket to use for Terraform remote state. Must be in the same project as the generated infrastructure.
+      Defaults to "genesis-terraform-state".
+    required: true
+
   terraform_output_dir:
     default: "terraform_output_dir"
     description: >
@@ -155,6 +161,7 @@ runs:
         GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}
         VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}
         ENVIRONMENT=${{ inputs.environment }}
+        TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}
         EOF
 
     - name: Generate Terraform files
