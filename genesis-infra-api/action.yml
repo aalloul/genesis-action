@@ -10,6 +10,11 @@ inputs:
     description: >
       Action to perform. Only "create-basic-infra" and "create-data-product" are supported for now.
     required: true
+
+  environment:
+    description: >
+      Deployment environment (e.g. "dev", "staging", "prod").
+    required: true
   
   token:
     description: >
@@ -36,6 +41,12 @@ inputs:
     description: >
       genesis-api image version to use (e.g. "1.2.3" or "1.2.3-rc.1").
       Defaults to "latest" (most recent stable release).
+    required: true
+
+  terraform_bucket:
+    description: >
+      GCS bucket to use for Terraform remote state. Must be in the same project as the generated infrastructure.
+      Defaults to "genesis-terraform-state".
     required: true
 
   terraform_output_dir:
@@ -65,6 +76,67 @@ inputs:
     required: false
     default: "true"
 
+  github_repository_owner:
+    description: >
+      GitHub repository owner (user or organization) of the calling repository.
+    required: true
+
+  folder_id:
+    description: GCP folder ID under which the project will be created.
+    required: true
+
+  cloud_provider:
+    description: Cloud provider to use (e.g. "gcp").
+    required: true
+
+  gcp_region:
+    description: GCP region (e.g. "europe-west1").
+    required: true
+
+  gcp_zone:
+    description: GCP zone (e.g. "europe-west1-b").
+    required: true
+
+  organization_short_name:
+    description: Short name of the organisation, used as a prefix for resource names.
+    required: true
+
+  organization_name:
+    description: Full name of the organisation, used for display purposes.
+    required: true
+
+  organization_id:
+    description: GCP organization ID where the project will be created.
+    required: true
+
+  seed_project_id:
+    description: GCP project ID of the seed project.
+    required: true
+
+  seed_service_account:
+    description: Email of the seed service account used to create resources.
+    required: true
+
+  billing_account:
+    description: GCP billing account ID to attach to the new project.
+    required: true
+
+  gcp_seed_project:
+    description: GCP seed project (used for quota / impersonation).
+    required: true
+
+  gcp_service_account:
+    description: GCP service account email for Terraform operations.
+    required: true
+
+  gcp_workload_identity_provider:
+    description: Workload Identity Federation provider resource name.
+    required: true
+
+  vpcsc_perimeter_name:
+    description: Name of the VPC Service Controls perimeter to add the new project to.
+    required: true
+
 runs:
   using: composite
   steps:
@@ -79,12 +151,36 @@ runs:
       shell: bash
       run: mkdir -p "${{ github.workspace }}/${{ inputs.terraform_output_dir }}"
 
+    - name: Create env file for Docker
+      shell: bash
+      run: |
+        cat <<EOF > "${{ runner.temp }}/genesis.env"
+        FOLDER_ID=${{ inputs.folder_id }}
+        CLOUD_PROVIDER=${{ inputs.cloud_provider }}
+        GCP_REGION=${{ inputs.gcp_region }}
+        GCP_ZONE=${{ inputs.gcp_zone }}
+        ORGANIZATION_SHORT_NAME=${{ inputs.organization_short_name }}
+        SEED_PROJECT_ID=${{ inputs.seed_project_id }}
+        SEED_SERVICE_ACCOUNT=${{ inputs.seed_service_account }}
+        BILLING_ACCOUNT=${{ inputs.billing_account }}
+        GCP_SEED_PROJECT=${{ inputs.gcp_seed_project }}
+        GCP_SERVICE_ACCOUNT=${{ inputs.gcp_service_account }}
+        GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}
+        GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}
+        VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}
+        ENVIRONMENT=${{ inputs.environment }}
+        TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}
+        ORGANIZATION_NAME=${{ inputs.organization_name }}
+        ORGANIZATION_ID=${{ inputs.organization_id }}
+        EOF
+
     - name: Generate Terraform files
       shell: bash
       run: |
         docker run --rm \
           --user $(id -u):$(id -g) \
           -v "${{ github.workspace }}:/workspace" \
+          --env-file "${{ runner.temp }}/genesis.env" \
           "ghcr.io/aalloul/genesis-api:${{ inputs.genesis_version }}" \
           ${{ inputs.action }} \
           --cfg "/workspace/${{ inputs.config_yml_file }}" \
@@ -105,7 +201,8 @@ runs:
     - name: Terraform Init & validate
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
-      run: terraform init && terraform validate -no-color
+      run: |
+        terraform init && terraform validate -no-color
 
     - name: Terraform Plan
       shell: bash
