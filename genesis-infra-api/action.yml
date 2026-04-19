@@ -154,7 +154,7 @@ runs:
         GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}
         GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}
         VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}
-        environment=${{ inputs.environment }}
+        ENVIRONMENT=${{ inputs.environment }}
         EOF
 
     - name: Generate Terraform files
