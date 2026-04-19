@@ -65,6 +65,8 @@ inputs:
     required: false
     default: "true"
 
+# TODO add a step to check all required env variables and secrets are set
+
 runs:
   using: composite
   steps:
@@ -73,7 +75,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ inputs.username }}
-        password: ${{ inputs.token }}
+        password: ${{ secrets.GENESIS_API_ACCESS }}
 
     - name: Create terraform directory
       shell: bash
@@ -81,6 +83,18 @@ runs:
 
     - name: Generate Terraform files
       shell: bash
+      env:
+        FOLDER_ID: ${{ vars.FOLDER_ID }}
+        CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER }}
+        GCP_REGION: ${{ vars.GCP_REGION }}
+        GCP_ZONE: ${{ vars.GCP_ZONE }}
+        ORGANIZATION_SHORT_NAME: ${{ vars.ORGANIZATION_SHORT_NAME }}
+        SEED_PROJECT_ID: ${{ vars.SEED_PROJECT_ID }}
+        SEED_SERVICE_ACCOUNT: ${{ vars.SEED_SERVICE_ACCOUNT }}
+        BILLING_ACCOUNT: ${{ secrets.BILLING_ACCOUNT }}
+        GCP_SEED_PROJECT: ${{ secrets.GCP_SEED_PROJECT }}
+        GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+        GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
       run: |
         docker run --rm \
           --user $(id -u):$(id -g) \
