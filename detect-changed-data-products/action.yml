@@ -1,0 +1,53 @@
+name: "Detect Changed Data Product Config Files"
+description: >
+  Detects changed YAML files in data_products/ compared to main, or uses a
+  manually provided comma-separated list (workflow_dispatch override).
+
+inputs:
+  event_name:
+    description: "The GitHub event name (github.event_name)"
+    required: true
+  input_config_files:
+    description: >
+      Comma-separated config file names relative to data_products/
+      (e.g. first_data_product.yml,subdir/second.yml).
+      Only used when event_name is workflow_dispatch.
+    required: false
+    default: ""
+
+outputs:
+  config_files:
+    description: "JSON array of data_products/-prefixed config file paths"
+    value: ${{ steps.detect.outputs.config_files }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Detect changed data product config files
+      id: detect
+      shell: bash
+      env:
+        EVENT_NAME: ${{ inputs.event_name }}
+        INPUT_CONFIG_FILES: ${{ inputs.input_config_files }}
+      run: |
+        if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+          if [[ -z "$INPUT_CONFIG_FILES" ]]; then
+            echo "ERROR: INPUT_CONFIG_FILES must be provided for workflow_dispatch events." >&2
+            exit 1
+          fi
+          invalid=$(echo "$INPUT_CONFIG_FILES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | grep -v '\.yml$')
+          if [[ -n "$invalid" ]]; then
+            echo "ERROR: All config files must have a .yml suffix. Invalid files: $invalid" >&2
+            exit 1
+          fi
+          files=$(echo "$INPUT_CONFIG_FILES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | sed 's|^|data_products/|' | jq -R . | jq -sc .)
+        else
+          files=$(git diff --name-only origin/main HEAD -- data_products/ | grep '\.yml$' | jq -R . | jq -sc .)
+        fi
+        echo "config_files=$files" >> "$GITHUB_OUTPUT"
+        echo "INFO: Detected config files: $files"
