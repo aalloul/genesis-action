@@ -65,6 +65,50 @@ inputs:
     required: false
     default: "true"
 
+  folder_id:
+    description: GCP folder ID under which the project will be created.
+    required: true
+
+  cloud_provider:
+    description: Cloud provider to use (e.g. "gcp").
+    required: true
+
+  gcp_region:
+    description: GCP region (e.g. "europe-west1").
+    required: true
+
+  gcp_zone:
+    description: GCP zone (e.g. "europe-west1-b").
+    required: true
+
+  organization_short_name:
+    description: Short name of the organisation, used as a prefix for resource names.
+    required: true
+
+  seed_project_id:
+    description: GCP project ID of the seed project.
+    required: true
+
+  seed_service_account:
+    description: Email of the seed service account used to create resources.
+    required: true
+
+  billing_account:
+    description: GCP billing account ID to attach to the new project.
+    required: true
+
+  gcp_seed_project:
+    description: GCP seed project (used for quota / impersonation).
+    required: true
+
+  gcp_service_account:
+    description: GCP service account email for Terraform operations.
+    required: true
+
+  gcp_workload_identity_provider:
+    description: Workload Identity Federation provider resource name.
+    required: true
+
 # TODO add a step to check all required env variables and secrets are set
 
 runs:
@@ -75,7 +119,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ inputs.username }}
-        password: ${{ secrets.GENESIS_API_ACCESS }}
+        password: ${{ inputs.token }}
 
     - name: Create terraform directory
       shell: bash
@@ -84,17 +128,17 @@ runs:
     - name: Generate Terraform files
       shell: bash
       env:
-        FOLDER_ID: ${{ vars.FOLDER_ID }}
-        CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER }}
-        GCP_REGION: ${{ vars.GCP_REGION }}
-        GCP_ZONE: ${{ vars.GCP_ZONE }}
-        ORGANIZATION_SHORT_NAME: ${{ vars.ORGANIZATION_SHORT_NAME }}
-        SEED_PROJECT_ID: ${{ vars.SEED_PROJECT_ID }}
-        SEED_SERVICE_ACCOUNT: ${{ vars.SEED_SERVICE_ACCOUNT }}
-        BILLING_ACCOUNT: ${{ secrets.BILLING_ACCOUNT }}
-        GCP_SEED_PROJECT: ${{ secrets.GCP_SEED_PROJECT }}
-        GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
-        GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        FOLDER_ID: ${{ inputs.folder_id }}
+        CLOUD_PROVIDER: ${{ inputs.cloud_provider }}
+        GCP_REGION: ${{ inputs.gcp_region }}
+        GCP_ZONE: ${{ inputs.gcp_zone }}
+        ORGANIZATION_SHORT_NAME: ${{ inputs.organization_short_name }}
+        SEED_PROJECT_ID: ${{ inputs.seed_project_id }}
+        SEED_SERVICE_ACCOUNT: ${{ inputs.seed_service_account }}
+        BILLING_ACCOUNT: ${{ inputs.billing_account }}
+        GCP_SEED_PROJECT: ${{ inputs.gcp_seed_project }}
+        GCP_SERVICE_ACCOUNT: ${{ inputs.gcp_service_account }}
+        GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ inputs.gcp_workload_identity_provider }}
       run: |
         docker run --rm \
           --user $(id -u):$(id -g) \
