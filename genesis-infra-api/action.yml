@@ -101,6 +101,14 @@ inputs:
     description: Short name of the organisation, used as a prefix for resource names.
     required: true
 
+  organization_name:
+    description: Full name of the organisation, used for display purposes.
+    required: true
+
+  organization_id:
+    description: GCP organization ID where the project will be created.
+    required: true
+
   seed_project_id:
     description: GCP project ID of the seed project.
     required: true
@@ -162,6 +170,8 @@ runs:
         VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}
         ENVIRONMENT=${{ inputs.environment }}
         TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}
+        ORGANIZATION_NAME=${{ inputs.organization_name }}
+        ORGANIZATION_ID=${{ inputs.organization_id }}
         EOF
 
     - name: Generate Terraform files
