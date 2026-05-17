@@ -137,6 +137,13 @@ inputs:
     description: Name of the VPC Service Controls perimeter to add the new project to.
     required: true
 
+  mapping_type:
+    description: >
+      Name of the JSON file that maps Terraform output variables to GitHub variables and secrets.
+      This file must be located in the action's root directory. Defaults to "tf_outputs_mapping.json".
+    required: false
+    default: "base_infra_mappings"
+
 runs:
   using: composite
   steps:
@@ -174,6 +181,7 @@ runs:
         ORGANIZATION_ID=${{ inputs.organization_id }}
         EOF
 
+
     - name: Generate Terraform files
       shell: bash
       run: |
@@ -185,6 +193,7 @@ runs:
           ${{ inputs.action }} \
           --cfg "/workspace/${{ inputs.config_yml_file }}" \
           --output-dir "/workspace/${{ inputs.terraform_output_dir }}"
+
 
     - name: Store generated Terraform files as an artifact
       uses: actions/upload-artifact@v7
@@ -214,3 +223,19 @@ runs:
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       if: ${{ inputs.run_terraform_apply == 'true' }}
       run: terraform apply tfplan
+
+    - name: Store Terraform outputs as GitHub variables and secrets
+      shell: bash
+      if: ${{ inputs.run_terraform_apply == 'true' }}
+      working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ENVIRONMENT: ${{ inputs.environment }}
+        REPO: ${{ github.repository }}
+        MAPPING_FILE: ${{ github.action_path }}/${{ inputs.mapping_type }}.json
+      run: |
+        if [[ ! -f "$MAPPING_FILE" ]]; then
+          echo "Error: mapping file not found: $MAPPING_FILE" >&2
+          exit 1
+        fi
+        bash "${{ github.action_path }}/store_tf_outputs.sh"

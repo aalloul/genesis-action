@@ -1,0 +1,41 @@
+{
+  "secrets": [
+    {
+      "tf_key": "",
+      "gh_name": "",
+      "env_scoped": true
+    }
+  ],
+  "variables": [
+    {
+      "tf_key": "composer_project_id",
+      "gh_name": "COMPOSER_PROJECT_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "composer_project_name",
+      "gh_name": "COMPOSER_PROJECT_NAME",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "secrets_project_id",
+      "gh_name": "SECRETS_PROJECT_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "secrets_project_name",
+      "gh_name": "SECRETS_PROJECT_NAME",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "bigquery_project_id",
+      "gh_name": "BIGQUERY_PROJECT_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "bigquery_project_name",
+      "gh_name": "BIGQUERY_PROJECT_NAME",
+      "env_scoped": true
+    }
+  ]
+}
