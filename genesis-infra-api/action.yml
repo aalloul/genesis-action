@@ -25,7 +25,7 @@ inputs:
     required: false
     default: ${{ github.token }}
 
-  vars_access_token:
+  repo_admin_token:
     description: >
       GitHub personal access token with write permissions on secrets & variables,
       and repo scope (required by the Terraform GitHub provider to create and
@@ -230,7 +230,7 @@ runs:
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       env:
-        GITHUB_TOKEN: ${{ inputs.vars_access_token }}
+        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform plan -out=tfplan
 
@@ -239,7 +239,7 @@ runs:
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       if: ${{ inputs.run_terraform_apply == 'true' }}
       env:
-        GITHUB_TOKEN: ${{ inputs.vars_access_token }}
+        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform apply tfplan
 
@@ -248,7 +248,7 @@ runs:
       if: ${{ inputs.run_terraform_apply == 'true' }}
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       env:
-        GH_TOKEN: ${{ inputs.vars_access_token }}
+        GH_TOKEN: ${{ inputs.repo_admin_token }}
         ENVIRONMENT: ${{ inputs.environment }}
         REPO: ${{ inputs.github_repo_name }}
         MAPPING_FILE: ${{ github.action_path }}/${{ inputs.mapping_type }}.json

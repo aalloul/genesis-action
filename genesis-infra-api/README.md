@@ -27,7 +27,7 @@ jobs:
         with:
           action: create-basic-infra
           environment: dev
-          vars_access_token: ${{ secrets.GENESIS_PAT }}
+          repo_admin_token: ${{ secrets.GENESIS_PAT }}
           config_yml_file: genesis_config.yml
           genesis_version: "1.0.0"
           terraform_bucket: my-terraform-state-bucket
@@ -65,7 +65,7 @@ jobs:
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `ghcr_token` | no | `github.token` | GitHub token with `packages:read`. Used to pull the genesis-api image from GHCR. |
-| `vars_access_token` | yes | — | GitHub Personal Access Token used to create/update GitHub Actions variables and secrets after apply. See [required PAT permissions](#required-pat-permissions) below. |
+| `repo_admin_token` | yes | — | GitHub Personal Access Token used to create/update GitHub Actions variables and secrets after apply. See [required PAT permissions](#required-pat-permissions) below. |
 | `username` | no | `github.actor` | GitHub username associated with `ghcr_token`. |
 
 ### Genesis configuration
@@ -145,7 +145,7 @@ Entries with an empty `tf_key` are skipped, so the default file is a no-op.
 
 ### Required PAT permissions
 
-Variables and secrets are written using `vars_access_token`, which must be a GitHub Personal Access Token with the following repository permissions on the target repository:
+Variables and secrets are written using `repo_admin_token`, which must be a GitHub Personal Access Token with the following repository permissions on the target repository:
 
 | Permission | Level |
 |------------|-------|
