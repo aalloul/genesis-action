@@ -38,6 +38,12 @@ inputs:
     required: false
     default: ${{ github.actor }}
 
+  github_repo_name:
+     description: >
+       The name of the repo where the environment variables & secrets will be stored.
+       If omitted, the value is read from the Terraform output key "github_repo_name".
+     required: false
+
   config_yml_file:
     description: >
       Path to the genesis config YAML file, relative to the repository root.
@@ -237,11 +243,17 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.vars_access_token }}
         ENVIRONMENT: ${{ inputs.environment }}
-        REPO: ${{ github.repository }}
+        REPO: ${{ inputs.github_repo_name }}
         MAPPING_FILE: ${{ github.action_path }}/${{ inputs.mapping_type }}.json
       run: |
         if [[ ! -f "$MAPPING_FILE" ]]; then
           echo "Error: mapping file not found: $MAPPING_FILE" >&2
           exit 1
         fi
+
+        if [[ -z "$REPO" ]]; then
+          REPO=$(terraform output -raw github_repo_name)
+        fi
+        export REPO
+
         bash "${{ github.action_path }}/store_tf_outputs.sh"
