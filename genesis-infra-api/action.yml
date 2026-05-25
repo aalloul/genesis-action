@@ -27,8 +27,9 @@ inputs:
 
   vars_access_token:
     description: >
-      GitHub personal access token with write permissions on both secrets & variables.
-      Used to create/update the variables and secrets useful for the Genesis API.
+      GitHub personal access token with write permissions on secrets & variables,
+      and repo scope (required by the Terraform GitHub provider to create and
+      configure repositories).
     required: true
 
   username:
@@ -228,12 +229,18 @@ runs:
     - name: Terraform Plan
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.vars_access_token }}
+        GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       if: ${{ inputs.run_terraform_apply == 'true' }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.vars_access_token }}
+        GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform apply tfplan
 
     - name: Store Terraform outputs as GitHub variables and secrets
