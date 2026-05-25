@@ -1,0 +1,57 @@
+{
+  "secrets": [
+    {
+      "tf_key": "",
+      "gh_name": "",
+      "env_scoped": true
+    }
+  ],
+  "variables": [
+    {
+      "tf_key": "project_id",
+      "gh_name": "PROJECT_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "project_name",
+      "gh_name": "PROJECT_NAME",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "project_number",
+      "gh_name": "PROJECT_NUMBER",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "composer_service_account_email",
+      "gh_name": "COMPOSER_SERVICE_ACCOUNT_EMAIL",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "deployment_service_account_email",
+      "gh_name": "DEPLOYMENT_SERVICE_ACCOUNT_EMAIL",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "workload_identity_pool_id",
+      "gh_name": "WORKLOAD_IDENTITY_POOL_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "workload_identity_pool_name",
+      "gh_name": "WORKLOAD_IDENTITY_POOL_NAME",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "workload_identity_provider_id",
+      "gh_name": "WORKLOAD_IDENTITY_PROVIDER_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "workload_identity_provider_name",
+      "gh_name": "WORKLOAD_IDENTITY_PROVIDER_NAME",
+      "env_scoped": true
+    }
+
+  ]
+}
