@@ -16,7 +16,7 @@ inputs:
       Deployment environment (e.g. "dev", "staging", "prod").
     required: true
   
-  token:
+  ghcr_token:
     description: >
       GitHub token with packages:read permission.
       Defaults to the calling repository GITHUB_TOKEN. The repository this
@@ -24,6 +24,12 @@ inputs:
       list by your Genesis administrator.
     required: false
     default: ${{ github.token }}
+
+  vars_access_token:
+    description: >
+      GitHub personal access token with write permissions on both secrets & variables.
+      Used to create/update the variables and secrets useful for the Genesis API.
+    required: true
 
   username:
     description: >
@@ -152,7 +158,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ inputs.username }}
-        password: ${{ inputs.token }}
+        password: ${{ inputs.ghcr_token }}
 
     - name: Create terraform directory
       shell: bash
@@ -229,7 +235,7 @@ runs:
       if: ${{ inputs.run_terraform_apply == 'true' }}
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ inputs.vars_access_token }}
         ENVIRONMENT: ${{ inputs.environment }}
         REPO: ${{ github.repository }}
         MAPPING_FILE: ${{ github.action_path }}/${{ inputs.mapping_type }}.json

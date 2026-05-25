@@ -19,8 +19,6 @@ jobs:
       contents: read
       packages: read
       id-token: write   # required for WIF authentication
-      variables: write  # required to store Terraform outputs as variables
-      secrets: write    # required to store Terraform outputs as secrets
 
     steps:
       - uses: actions/checkout@v4
@@ -29,6 +27,7 @@ jobs:
         with:
           action: create-basic-infra
           environment: dev
+          vars_access_token: ${{ secrets.GENESIS_PAT }}
           config_yml_file: genesis_config.yml
           genesis_version: "1.0.0"
           terraform_bucket: my-terraform-state-bucket
@@ -65,8 +64,9 @@ jobs:
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `token` | no | `github.token` | GitHub token with `packages:read`. Used to pull the genesis-api image from GHCR and to set repository variables/secrets after apply. |
-| `username` | no | `github.actor` | GitHub username associated with `token`. |
+| `ghcr_token` | no | `github.token` | GitHub token with `packages:read`. Used to pull the genesis-api image from GHCR. |
+| `vars_access_token` | yes | — | GitHub Personal Access Token used to create/update GitHub Actions variables and secrets after apply. See [required PAT permissions](#required-pat-permissions) below. |
+| `username` | no | `github.actor` | GitHub username associated with `ghcr_token`. |
 
 ### Genesis configuration
 
@@ -143,19 +143,23 @@ The mapping file is a JSON file with the following structure:
 
 Entries with an empty `tf_key` are skipped, so the default file is a no-op.
 
-The calling workflow must declare the following permissions for this step to succeed:
+### Required PAT permissions
 
-```yaml
-permissions:
-  variables: write
-  secrets: write
-```
+Variables and secrets are written using `vars_access_token`, which must be a GitHub Personal Access Token with the following repository permissions on the target repository:
+
+| Permission | Level |
+|------------|-------|
+| Environments | Read and write |
+| Secrets | Read and write |
+| Variables | Read and write |
+
+> Note: the built-in `GITHUB_TOKEN` cannot be used here because it does not support environment-scoped variables and secrets via the REST API.
 
 The target GitHub environment (matching `inputs.environment`) must already exist in the repository settings before environment-scoped variables or secrets can be written.
 
 ## What the action does
 
-1. Logs in to GHCR using `token` and `username`.
+1. Logs in to GHCR using `ghcr_token` and `username`.
 2. Runs the `genesis-api` Docker image, which generates Terraform files from `genesis_config.yml` into `terraform_output_dir`.
 3. Optionally uploads the generated files as a workflow artifact (`debug: true`).
 4. Runs `terraform init`, `terraform validate`, and `terraform plan`.
