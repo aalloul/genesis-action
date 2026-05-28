@@ -245,9 +245,9 @@ runs:
         ENVIRONMENT: ${{ inputs.environment }}
         REPO: ${{ inputs.github_repo_name }}
       run: |
-        if '${{ inputs.action }}' == 'create-basic-infra'; then
+        if [[ '${{ inputs.action }}' == 'create-basic-infra' ]]; then
           export MAPPING_FILE=${{ github.action_path }}/base_infra_mappings.json
-        elif '${{ inputs.action }}' == 'create-data-product'; then
+        elif [[ '${{ inputs.action }}' == 'create-data-product' ]]; then
           export MAPPING_FILE=${{ github.action_path }}/data_product_creation_mappings.json
         else
           echo "Error: no mapping file for action: ${{ inputs.action }}" >&2
