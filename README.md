@@ -63,6 +63,27 @@ jobs:
 
 Your repository must be added to the **genesis-api GHCR package access list** by your Genesis administrator before any action will work. Contact your administrator with your repository name (`your-org/your-repo`).
 
+#### `repo_admin_token` — required PAT permissions
+
+The action uses `repo_admin_token` both to store Terraform outputs as GitHub secrets/variables and to let Terraform create and configure GitHub repositories. The token must be able to act on repositories that do not exist yet at the time the workflow runs.
+
+**Fine-grained PAT (recommended)**
+
+Set repository access to **All repositories** in the target organisation (specific-repo access will cause 403 errors on newly created repos). Grant the following permissions:
+
+| Permission | Level |
+|---|---|
+| Administration | Read and write |
+| Contents | Read and write |
+| Environments | Read and write |
+| Secrets | Read and write |
+| Variables | Read and write |
+| Members | Read and write |
+
+**Classic PAT**
+
+Grant the `repo` scope (full) and `admin:org` (for team-repository management).
+
 ### Usage
 
 ```yaml

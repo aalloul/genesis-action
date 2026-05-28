@@ -25,10 +25,11 @@ inputs:
     required: false
     default: ${{ github.token }}
 
-  vars_access_token:
+  repo_admin_token:
     description: >
-      GitHub personal access token with write permissions on both secrets & variables.
-      Used to create/update the variables and secrets useful for the Genesis API.
+      GitHub personal access token with write permissions on secrets & variables,
+      and repo scope (required by the Terraform GitHub provider to create and
+      configure repositories).
     required: true
 
   username:
@@ -37,6 +38,12 @@ inputs:
       Defaults to the calling repository GITHUB_ACTOR.
     required: false
     default: ${{ github.actor }}
+
+  github_repo_name:
+     description: >
+       The name of the repo where the environment variables & secrets will be stored.
+       If omitted, the value is read from the Terraform output key "github_repo_name".
+     required: false
 
   config_yml_file:
     description: >
@@ -143,13 +150,6 @@ inputs:
     description: Name of the VPC Service Controls perimeter to add the new project to.
     required: true
 
-  mapping_type:
-    description: >
-      Name of the JSON file that maps Terraform output variables to GitHub variables and secrets.
-      This file must be located in the action's root directory. Defaults to "tf_outputs_mapping.json".
-    required: false
-    default: "base_infra_mappings"
-
 runs:
   using: composite
   steps:
@@ -222,12 +222,18 @@ runs:
     - name: Terraform Plan
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
+        GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       if: ${{ inputs.run_terraform_apply == 'true' }}
+      env:
+        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
+        GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform apply tfplan
 
     - name: Store Terraform outputs as GitHub variables and secrets
@@ -235,13 +241,23 @@ runs:
       if: ${{ inputs.run_terraform_apply == 'true' }}
       working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
       env:
-        GH_TOKEN: ${{ inputs.vars_access_token }}
+        GH_TOKEN: ${{ inputs.repo_admin_token }}
         ENVIRONMENT: ${{ inputs.environment }}
-        REPO: ${{ github.repository }}
-        MAPPING_FILE: ${{ github.action_path }}/${{ inputs.mapping_type }}.json
+        REPO: ${{ inputs.github_repo_name }}
       run: |
-        if [[ ! -f "$MAPPING_FILE" ]]; then
-          echo "Error: mapping file not found: $MAPPING_FILE" >&2
+        if [[ '${{ inputs.action }}' == 'create-basic-infra' ]]; then
+          export MAPPING_FILE=${{ github.action_path }}/base_infra_mappings.json
+        elif [[ '${{ inputs.action }}' == 'create-data-product' ]]; then
+          export MAPPING_FILE=${{ github.action_path }}/data_product_creation_mappings.json
+        else
+          echo "Error: no mapping file for action: ${{ inputs.action }}" >&2
           exit 1
         fi
+        echo "Using mapping file: $MAPPING_FILE"
+        
+        if [[ -z "$REPO" ]]; then
+          REPO=$(terraform output -raw github_repo_name)
+        fi
+        export REPO
+
         bash "${{ github.action_path }}/store_tf_outputs.sh"
