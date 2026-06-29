@@ -167,6 +167,7 @@ runs:
     - name: Create env file for Docker
       shell: bash
       run: |
+        echo "repository_owner_id=${{ github.repository_owner_id }}"
         cat <<EOF > "${{ runner.temp }}/genesis.env"
         FOLDER_ID=${{ inputs.folder_id }}
         CLOUD_PROVIDER=${{ inputs.cloud_provider }}
