@@ -185,8 +185,8 @@ runs:
         TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}
         ORGANIZATION_NAME=${{ inputs.organization_name }}
         ORGANIZATION_ID=${{ inputs.organization_id }}
-        EOF
-
+        GITHUB_REPOSITORY_OWNER_ID=${{ github.repository_owner_id }}
+        EOF 
 
     - name: Generate Terraform files
       shell: bash
