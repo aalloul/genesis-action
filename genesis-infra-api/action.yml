@@ -167,26 +167,27 @@ runs:
     - name: Create env file for Docker
       shell: bash
       run: |
-        cat <<EOF > "${{ runner.temp }}/genesis.env"
-        FOLDER_ID=${{ inputs.folder_id }}
-        CLOUD_PROVIDER=${{ inputs.cloud_provider }}
-        GCP_REGION=${{ inputs.gcp_region }}
-        GCP_ZONE=${{ inputs.gcp_zone }}
-        ORGANIZATION_SHORT_NAME=${{ inputs.organization_short_name }}
-        SEED_PROJECT_ID=${{ inputs.seed_project_id }}
-        SEED_SERVICE_ACCOUNT=${{ inputs.seed_service_account }}
-        BILLING_ACCOUNT=${{ inputs.billing_account }}
-        GCP_SEED_PROJECT=${{ inputs.gcp_seed_project }}
-        GCP_SERVICE_ACCOUNT=${{ inputs.gcp_service_account }}
-        GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}
-        GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}
-        VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}
-        ENVIRONMENT=${{ inputs.environment }}
-        TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}
-        ORGANIZATION_NAME=${{ inputs.organization_name }}
-        ORGANIZATION_ID=${{ inputs.organization_id }}
-        EOF
-
+        echo "repository_owner_id=${{ github.repository_owner_id }}"
+        {
+          echo "FOLDER_ID=${{ inputs.folder_id }}"
+          echo "CLOUD_PROVIDER=${{ inputs.cloud_provider }}"
+          echo "GCP_REGION=${{ inputs.gcp_region }}"
+          echo "GCP_ZONE=${{ inputs.gcp_zone }}"
+          echo "ORGANIZATION_SHORT_NAME=${{ inputs.organization_short_name }}"
+          echo "SEED_PROJECT_ID=${{ inputs.seed_project_id }}"
+          echo "SEED_SERVICE_ACCOUNT=${{ inputs.seed_service_account }}"
+          echo "BILLING_ACCOUNT=${{ inputs.billing_account }}"
+          echo "GCP_SEED_PROJECT=${{ inputs.gcp_seed_project }}"
+          echo "GCP_SERVICE_ACCOUNT=${{ inputs.gcp_service_account }}"
+          echo "GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}"
+          echo "GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}"
+          echo "VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}"
+          echo "ENVIRONMENT=${{ inputs.environment }}"
+          echo "TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}"
+          echo "ORGANIZATION_NAME=${{ inputs.organization_name }}"
+          echo "ORGANIZATION_ID=${{ inputs.organization_id }}"
+          echo "GITHUB_REPOSITORY_OWNER_ID=${{ github.repository_owner_id }}"
+        } > "${{ runner.temp }}/genesis.env"
 
     - name: Generate Terraform files
       shell: bash
