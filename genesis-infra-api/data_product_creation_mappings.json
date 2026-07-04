@@ -8,6 +8,11 @@
   ],
   "variables": [
     {
+      "tf_key": "cloud_provider",
+      "gh_name": "CLOUD_PROVIDER",
+      "env_scoped": false
+    },
+    {
       "tf_key": "project_id",
       "gh_name": "PROJECT_ID",
       "env_scoped": true
