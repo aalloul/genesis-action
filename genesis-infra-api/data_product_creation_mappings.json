@@ -51,7 +51,11 @@
       "tf_key": "workload_identity_provider_name",
       "gh_name": "WORKLOAD_IDENTITY_PROVIDER_NAME",
       "env_scoped": true
+    },
+    {
+      "tf_key": "bigquery_dataset_id",
+      "gh_name": "BIGQUERY_DATASET_ID",
+      "env_scoped": true
     }
-
   ]
 }
