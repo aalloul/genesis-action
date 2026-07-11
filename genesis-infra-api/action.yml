@@ -226,7 +226,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: TF_LOG=DEBUG terraform plan -out=tfplan
+      run: terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
@@ -250,6 +250,8 @@ runs:
           export MAPPING_FILE=${{ github.action_path }}/base_infra_mappings.json
         elif [[ '${{ inputs.action }}' == 'create-data-product' ]]; then
           export MAPPING_FILE=${{ github.action_path }}/data_product_creation_mappings.json
+        elif [[ '${{ inputs.action }}' == 'provision-resources' ]]; then
+          export MAPPING_FILE=${{ github.action_path }}/data_product_provision_resources_mappings.json
         else
           echo "Error: no mapping file for action: ${{ inputs.action }}" >&2
           exit 1
