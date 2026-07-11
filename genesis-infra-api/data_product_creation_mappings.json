@@ -8,6 +8,16 @@
   ],
   "variables": [
     {
+      "tf_key": "cloud_provider",
+      "gh_name": "CLOUD_PROVIDER",
+      "env_scoped": false
+    },
+    {
+      "tf_key": "environment",
+      "gh_name": "ENVIRONMENT",
+      "env_scoped": true
+    },
+    {
       "tf_key": "project_id",
       "gh_name": "PROJECT_ID",
       "env_scoped": true
@@ -21,6 +31,16 @@
       "tf_key": "project_number",
       "gh_name": "PROJECT_NUMBER",
       "env_scoped": true
+    },
+    {
+      "tf_key": "gcp_region",
+      "gh_name": "GCP_REGION",
+      "env_scoped": false
+    },
+    {
+      "tf_key": "gcp_zone",
+      "gh_name": "GCP_ZONE",
+      "env_scoped": false
     },
     {
       "tf_key": "composer_service_account_email",
