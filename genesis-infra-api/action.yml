@@ -58,7 +58,7 @@ runs:
       env:
         ENV_VARS_JSON: ${{ inputs.env_vars }}
         SECRETS_JSON: ${{ inputs.secrets }}
-        DEFAULT_GHCR_TOKEN: ${{ github.token }}
+        DEFAULT_GENESIS_API_ACCESS: ${{ github.token }}
         DEFAULT_USERNAME: ${{ github.actor }}
         DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
         DEFAULT_TERRAFORM_VERSION: 1.14.8
@@ -91,12 +91,12 @@ runs:
           declare "$key=$(get "$key")"
         done
 
-        GHCR_TOKEN="$(get GHCR_TOKEN)"; GHCR_TOKEN="${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
+        GENESIS_API_ACCESS="$(get GENESIS_API_ACCESS)"; GENESIS_API_ACCESS="${GENESIS_API_ACCESS:-$DEFAULT_GENESIS_API_ACCESS}"
         USERNAME="$(get USERNAME)"; USERNAME="${USERNAME:-$DEFAULT_USERNAME}"
         GITHUB_REPO_NAME="$(get GITHUB_REPO_NAME)"
         TERRAFORM_OUTPUT_DIR="$(get TERRAFORM_OUTPUT_DIR)"; TERRAFORM_OUTPUT_DIR="${TERRAFORM_OUTPUT_DIR:-$DEFAULT_TERRAFORM_OUTPUT_DIR}"
         TERRAFORM_VERSION="$(get TERRAFORM_VERSION)"; TERRAFORM_VERSION="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
-        optional_keys=(GHCR_TOKEN USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION)
+        optional_keys=(GENESIS_API_ACCESS USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION)
 
         # Write every resolved key to $GITHUB_ENV (heredoc form, safe for values with special characters)
         # so later steps can read them via the `env` context.
@@ -113,7 +113,7 @@ runs:
 
         # The genesis-api container only needs the actual GCP/org configuration,
         # not the action's own plumbing (tokens, directories, versions).
-        jq -r 'del(.GHCR_TOKEN, .USERNAME, .REPO_ADMIN_TOKEN, .TERRAFORM_OUTPUT_DIR, .TERRAFORM_VERSION, .GITHUB_REPO_NAME)
+        jq -r 'del(.GENESIS_API_ACCESS, .USERNAME, .REPO_ADMIN_TOKEN, .TERRAFORM_OUTPUT_DIR, .TERRAFORM_VERSION, .GITHUB_REPO_NAME)
                | to_entries[] | "\(.key)=\(.value)"' <<< "$MERGED" > "${{ runner.temp }}/genesis.env"
 
     - name: Log in to GHCR
@@ -121,7 +121,7 @@ runs:
       with:
         registry: ghcr.io
         username: ${{ env.USERNAME }}
-        password: ${{ env.GHCR_TOKEN }}
+        password: ${{ env.GENESIS_API_ACCESS }}
 
     - name: Generate Terraform files
       shell: bash
