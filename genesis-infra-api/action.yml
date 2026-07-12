@@ -8,42 +8,8 @@ description: >
 inputs:
   action:
     description: >
-      Action to perform. Only "create-basic-infra" and "create-data-product" are supported for now.
+      Action to perform. One of "create-basic-infra", "create-data-product" or "provision-resources".
     required: true
-
-  environment:
-    description: >
-      Deployment environment (e.g. "dev", "staging", "prod").
-    required: true
-  
-  ghcr_token:
-    description: >
-      GitHub token with packages:read permission.
-      Defaults to the calling repository GITHUB_TOKEN. The repository this
-      token belongs to must be added to the genesis-api GHCR package access
-      list by your Genesis administrator.
-    required: false
-    default: ${{ github.token }}
-
-  repo_admin_token:
-    description: >
-      GitHub personal access token with write permissions on secrets & variables,
-      and repo scope (required by the Terraform GitHub provider to create and
-      configure repositories).
-    required: true
-
-  username:
-    description: >
-      GitHub username associated with the provided token.
-      Defaults to the calling repository GITHUB_ACTOR.
-    required: false
-    default: ${{ github.actor }}
-
-  github_repo_name:
-     description: >
-       The name of the repo where the environment variables & secrets will be stored.
-       If omitted, the value is read from the Terraform output key "github_repo_name".
-     required: false
 
   config_yml_file:
     description: >
@@ -53,27 +19,7 @@ inputs:
   genesis_version:
     description: >
       genesis-api image version to use (e.g. "1.2.3" or "1.2.3-rc.1").
-      Defaults to "latest" (most recent stable release).
     required: true
-
-  terraform_bucket:
-    description: >
-      GCS bucket to use for Terraform remote state. Must be in the same project as the generated infrastructure.
-      Defaults to "genesis-terraform-state".
-    required: true
-
-  terraform_output_dir:
-    default: "terraform_output_dir"
-    description: >
-      Directory where the generated Terraform files will be stored, relative to the repository root.
-      Defaults to "terraform_output_dir".
-    required: false
-
-  terraform_version:
-    description: >
-      Terraform version constraint to use for the "Setup Terraform" step.
-    required: false
-    default: "1.14.8"
 
   debug:
     description: >
@@ -89,105 +35,93 @@ inputs:
     required: false
     default: "true"
 
-  github_repository_owner:
+  env_vars:
     description: >
-      GitHub repository owner (user or organization) of the calling repository.
-    required: true
+      JSON object of non-secret configuration values, e.g. `${{ toJSON(vars) }}`.
+      See the README for the full list of keys this action reads.
+    required: false
+    default: "{}"
 
-  folder_id:
-    description: GCP folder ID under which the project will be created.
-    required: true
-
-  cloud_provider:
-    description: Cloud provider to use (e.g. "gcp").
-    required: true
-
-  gcp_region:
-    description: GCP region (e.g. "europe-west1").
-    required: true
-
-  gcp_zone:
-    description: GCP zone (e.g. "europe-west1-b").
-    required: true
-
-  organization_short_name:
-    description: Short name of the organisation, used as a prefix for resource names.
-    required: true
-
-  organization_name:
-    description: Full name of the organisation, used for display purposes.
-    required: true
-
-  organization_id:
-    description: GCP organization ID where the project will be created.
-    required: true
-
-  gcp_project_id:
-    description: The GCP project ID we want to deploy to.
-    required: true
-
-  impersonate_service_account:
-    description: Email of the SA to impersonate for Terraform operations (must have the required permissions on the project).
-    required: true
-
-  billing_account:
-    description: GCP billing account ID to attach to the new project.
-    required: true
-
-  gcp_seed_project:
-    description: GCP seed project (used for quota / impersonation).
-    required: true
-
-  gcp_service_account:
-    description: GCP service account email for Terraform operations.
-    required: true
-
-  gcp_workload_identity_provider:
-    description: Workload Identity Federation provider resource name.
-    required: true
-
-  vpcsc_perimeter_name:
-    description: Name of the VPC Service Controls perimeter to add the new project to.
-    required: true
+  secrets:
+    description: >
+      JSON object of sensitive configuration values, e.g. `${{ toJSON(secrets) }}`.
+      Values are masked in logs. Takes precedence over env_vars on key collisions.
+      See the README for the full list of keys this action reads.
+    required: false
+    default: "{}"
 
 runs:
   using: composite
   steps:
+    - name: Resolve configuration
+      shell: bash
+      env:
+        ENV_VARS_JSON: ${{ inputs.env_vars }}
+        SECRETS_JSON: ${{ inputs.secrets }}
+        DEFAULT_GHCR_TOKEN: ${{ github.token }}
+        DEFAULT_USERNAME: ${{ github.actor }}
+        DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
+        DEFAULT_TERRAFORM_VERSION: 1.14.8
+      run: |
+        set -euo pipefail
+
+        # Mask every secret value before anything else can print it.
+        while IFS= read -r value; do
+          [[ -n "$value" ]] && echo "::add-mask::$value"
+        done < <(jq -r '.[] | select(. != null)' <<< "$SECRETS_JSON")
+
+        MERGED=$(jq -n --argjson env_vars "$ENV_VARS_JSON" --argjson secrets "$SECRETS_JSON" '$env_vars * $secrets')
+
+        get() {
+          jq -r --arg k "$1" '.[$k] // empty' <<< "$MERGED"
+        }
+
+        # These keys are read from env_vars/secrets by name if present, and default to an
+        # empty string otherwise. Not every key is meaningful for every `action` value (e.g.
+        # org/folder-level keys are irrelevant for `provision-resources`), so nothing here is
+        # hard-validated - genesis-api itself is the source of truth for what a given action needs.
+        known_keys=(
+          FOLDER_ID CLOUD_PROVIDER GCP_REGION GCP_ZONE ORGANIZATION_SHORT_NAME
+          GCP_PROJECT_ID IMPERSONATE_SERVICE_ACCOUNT BILLING_ACCOUNT GCP_SEED_PROJECT
+          GCP_SERVICE_ACCOUNT GCP_WORKLOAD_IDENTITY_PROVIDER GITHUB_REPOSITORY_OWNER
+          VPCSC_PERIMETER_NAME ENVIRONMENT TERRAFORM_BUCKET ORGANIZATION_NAME
+          ORGANIZATION_ID REPO_ADMIN_TOKEN
+        )
+        for key in "${known_keys[@]}"; do
+          declare "$key=$(get "$key")"
+        done
+
+        GHCR_TOKEN="$(get GHCR_TOKEN)"; GHCR_TOKEN="${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
+        USERNAME="$(get USERNAME)"; USERNAME="${USERNAME:-$DEFAULT_USERNAME}"
+        GITHUB_REPO_NAME="$(get GITHUB_REPO_NAME)"
+        TERRAFORM_OUTPUT_DIR="$(get TERRAFORM_OUTPUT_DIR)"; TERRAFORM_OUTPUT_DIR="${TERRAFORM_OUTPUT_DIR:-$DEFAULT_TERRAFORM_OUTPUT_DIR}"
+        TERRAFORM_VERSION="$(get TERRAFORM_VERSION)"; TERRAFORM_VERSION="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
+        optional_keys=(GHCR_TOKEN USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION)
+
+        # Write every resolved key to $GITHUB_ENV (heredoc form, safe for values with special characters)
+        # so later steps can read them via the `env` context.
+        for key in "${known_keys[@]}" "${optional_keys[@]}"; do
+          delim="GHA_EOF_${key}_${RANDOM}${RANDOM}"
+          {
+            echo "$key<<$delim"
+            echo "${!key}"
+            echo "$delim"
+          } >> "$GITHUB_ENV"
+        done
+
+        mkdir -p "${{ github.workspace }}/$TERRAFORM_OUTPUT_DIR"
+
+        # The genesis-api container only needs the actual GCP/org configuration,
+        # not the action's own plumbing (tokens, directories, versions).
+        jq -r 'del(.GHCR_TOKEN, .USERNAME, .REPO_ADMIN_TOKEN, .TERRAFORM_OUTPUT_DIR, .TERRAFORM_VERSION, .GITHUB_REPO_NAME)
+               | to_entries[] | "\(.key)=\(.value)"' <<< "$MERGED" > "${{ runner.temp }}/genesis.env"
+
     - name: Log in to GHCR
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
-        username: ${{ inputs.username }}
-        password: ${{ inputs.ghcr_token }}
-
-    - name: Create terraform directory
-      shell: bash
-      run: mkdir -p "${{ github.workspace }}/${{ inputs.terraform_output_dir }}"
-
-    - name: Create env file for Docker
-      shell: bash
-      run: |
-        echo "repository_owner_id=${{ github.repository_owner_id }}"
-        {
-          echo "FOLDER_ID=${{ inputs.folder_id }}"
-          echo "CLOUD_PROVIDER=${{ inputs.cloud_provider }}"
-          echo "GCP_REGION=${{ inputs.gcp_region }}"
-          echo "GCP_ZONE=${{ inputs.gcp_zone }}"
-          echo "ORGANIZATION_SHORT_NAME=${{ inputs.organization_short_name }}"
-          echo "GCP_PROJECT_ID=${{ inputs.gcp_project_id }}"
-          echo "IMPERSONATE_SERVICE_ACCOUNT=${{ inputs.impersonate_service_account }}"
-          echo "BILLING_ACCOUNT=${{ inputs.billing_account }}"
-          echo "GCP_SEED_PROJECT=${{ inputs.gcp_seed_project }}"
-          echo "GCP_SERVICE_ACCOUNT=${{ inputs.gcp_service_account }}"
-          echo "GCP_WORKLOAD_IDENTITY_PROVIDER=${{ inputs.gcp_workload_identity_provider }}"
-          echo "GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}"
-          echo "VPCSC_PERIMETER_NAME=${{ inputs.vpcsc_perimeter_name }}"
-          echo "ENVIRONMENT=${{ inputs.environment }}"
-          echo "TERRAFORM_BUCKET=${{ inputs.terraform_bucket }}"
-          echo "ORGANIZATION_NAME=${{ inputs.organization_name }}"
-          echo "ORGANIZATION_ID=${{ inputs.organization_id }}"
-          echo "GITHUB_REPOSITORY_OWNER_ID=${{ github.repository_owner_id }}"
-        } > "${{ runner.temp }}/genesis.env"
+        username: ${{ env.USERNAME }}
+        password: ${{ env.GHCR_TOKEN }}
 
     - name: Generate Terraform files
       shell: bash
@@ -199,52 +133,51 @@ runs:
           "ghcr.io/aalloul/genesis-api:${{ inputs.genesis_version }}" \
           ${{ inputs.action }} \
           --cfg "/workspace/${{ inputs.config_yml_file }}" \
-          --output-dir "/workspace/${{ inputs.terraform_output_dir }}"
-
+          --output-dir "/workspace/${{ env.TERRAFORM_OUTPUT_DIR }}"
 
     - name: Store generated Terraform files as an artifact
       uses: actions/upload-artifact@v7
       if: ${{ inputs.debug == 'true' }}
       with:
         name: basic-infra-terraform
-        path: '${{ github.workspace }}/${{ inputs.terraform_output_dir }}'
+        path: '${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}'
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v4
       with:
-        terraform_version: ${{ inputs.terraform_version }}
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
 
     - name: Terraform Init & validate
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      working-directory: ${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}
       run: |
         terraform init && terraform validate -no-color
 
     - name: Terraform Plan
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      working-directory: ${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}
       env:
-        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
+        GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
-      working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      working-directory: ${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}
       if: ${{ inputs.run_terraform_apply == 'true' }}
       env:
-        GITHUB_TOKEN: ${{ inputs.repo_admin_token }}
+        GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
       run: terraform apply tfplan
 
     - name: Store Terraform outputs as GitHub variables and secrets
       shell: bash
       if: ${{ inputs.run_terraform_apply == 'true' }}
-      working-directory: ${{ github.workspace }}/${{ inputs.terraform_output_dir }}
+      working-directory: ${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}
       env:
-        GH_TOKEN: ${{ inputs.repo_admin_token }}
-        ENVIRONMENT: ${{ inputs.environment }}
-        REPO: ${{ inputs.github_repo_name }}
+        GH_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
+        ENVIRONMENT: ${{ env.ENVIRONMENT }}
+        REPO: ${{ env.GITHUB_REPO_NAME }}
       run: |
         if [[ '${{ inputs.action }}' == 'create-basic-infra' ]]; then
           export MAPPING_FILE=${{ github.action_path }}/base_infra_mappings.json
@@ -257,7 +190,7 @@ runs:
           exit 1
         fi
         echo "Using mapping file: $MAPPING_FILE"
-        
+
         if [[ -z "$REPO" ]]; then
           REPO=$(terraform output -raw github_repo_name)
         fi
