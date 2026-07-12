@@ -37,14 +37,14 @@ inputs:
 
   env_vars:
     description: >
-      JSON object of non-secret configuration values, e.g. `${{ toJSON(vars) }}`.
+      JSON object of non-secret configuration values, e.g. `toJSON(vars)` (don't forget to add $ and double {).
       See the README for the full list of keys this action reads.
     required: false
     default: "{}"
 
   secrets:
     description: >
-      JSON object of sensitive configuration values, e.g. `${{ toJSON(secrets) }}`.
+      JSON object of sensitive configuration values, e.g. `toJSON(secrets)`  (don't forget to add $ and double {).
       Values are masked in logs. Takes precedence over env_vars on key collisions.
       See the README for the full list of keys this action reads.
     required: false
