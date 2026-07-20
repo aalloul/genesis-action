@@ -58,7 +58,7 @@ runs:
       env:
         ENV_VARS_JSON: ${{ inputs.env_vars }}
         SECRETS_JSON: ${{ inputs.secrets }}
-        DEFAULT_GENESIS_API_ACCESS: ""
+        DEFAULT_GENESIS_API_ACCESS: "someVal"
         DEFAULT_USERNAME: ${{ github.actor }}
         DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
         DEFAULT_TERRAFORM_VERSION: 1.14.8
