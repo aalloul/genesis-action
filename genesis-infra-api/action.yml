@@ -133,6 +133,11 @@ runs:
     - name: Generate Terraform files
       shell: bash
       run: |
+        echo "============= print genesis.env ============="
+        echo "genesis.env contents:"
+        cat "${{ runner.temp }}/genesis.env"
+        echo "============= run genesis-api ============="
+        
         docker run --rm \
           --user $(id -u):$(id -g) \
           -v "${{ github.workspace }}:/workspace" \
