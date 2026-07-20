@@ -58,7 +58,7 @@ runs:
       env:
         ENV_VARS_JSON: ${{ inputs.env_vars }}
         SECRETS_JSON: ${{ inputs.secrets }}
-        DEFAULT_GENESIS_API_ACCESS: ${{ secrets.GENESIS_API_ACCESS }}
+        DEFAULT_GENESIS_API_ACCESS: ${{ github.token }}
         DEFAULT_USERNAME: ${{ github.actor }}
         DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
         DEFAULT_TERRAFORM_VERSION: 1.14.8
@@ -85,7 +85,7 @@ runs:
           GCP_PROJECT_ID IMPERSONATE_SERVICE_ACCOUNT BILLING_ACCOUNT GCP_SEED_PROJECT
           GCP_SERVICE_ACCOUNT GCP_WORKLOAD_IDENTITY_PROVIDER GITHUB_REPOSITORY_OWNER
           VPCSC_PERIMETER_NAME ENVIRONMENT TERRAFORM_BUCKET ORGANIZATION_NAME
-          ORGANIZATION_ID REPO_ADMIN_TOKEN
+          ORGANIZATION_ID REPO_ADMIN_TOKEN GENESIS_API_ACCESS
         )
         for key in "${known_keys[@]}"; do
           declare "$key=$(get "$key")"
