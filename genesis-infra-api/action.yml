@@ -71,7 +71,7 @@ runs:
         done < <(jq -r '.[] | select(. != null)' <<< "$SECRETS_JSON")
 
         MERGED=$(jq -n --argjson env_vars "$ENV_VARS_JSON" --argjson secrets "$SECRETS_JSON" '$env_vars * $secrets')
-
+        echo "Merged configuration: $MERGED"
         get() {
           jq -r --arg k "$1" '.[$k] // empty' <<< "$MERGED"
         }
@@ -88,14 +88,11 @@ runs:
           ORGANIZATION_ID REPO_ADMIN_TOKEN GENESIS_API_ACCESS
         )
         for key in "${known_keys[@]}"; do
+          echo "Resolved $key=$(get "$key")"
           declare "$key=$(get "$key")"
         done
 
         GENESIS_API_ACCESS="$(get GENESIS_API_ACCESS)"; GENESIS_API_ACCESS="${GENESIS_API_ACCESS:-$DEFAULT_GENESIS_API_ACCESS}"
-        echo "GENESIS_API_ACCESS = $GENESIS_API_ACCESS"
-        # print length of GENESIS_API_ACCESS to avoid printing the actual value
-        echo "GENESIS_API_ACCESS length = ${#GENESIS_API_ACCESS}"
-        
         USERNAME="$(get USERNAME)"; USERNAME="${USERNAME:-$DEFAULT_USERNAME}"
         GITHUB_REPO_NAME="$(get GITHUB_REPO_NAME)"
         TERRAFORM_OUTPUT_DIR="$(get TERRAFORM_OUTPUT_DIR)"; TERRAFORM_OUTPUT_DIR="${TERRAFORM_OUTPUT_DIR:-$DEFAULT_TERRAFORM_OUTPUT_DIR}"
