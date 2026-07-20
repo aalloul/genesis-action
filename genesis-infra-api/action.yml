@@ -50,6 +50,13 @@ inputs:
     required: false
     default: "{}"
 
+  github_repository_owner:
+    description: >
+      The owner of the repository where this action is being run. This is used to resolve the GITHUB_REPO_NAME
+      if it is not provided in env_vars or secrets. Defaults to the owner of the repository where this action is run.
+    required: false
+    default: ${{ github.repository_owner }}
+
 runs:
   using: composite
   steps:
@@ -64,6 +71,8 @@ runs:
         DEFAULT_TERRAFORM_VERSION: 1.14.8
       run: |
         set -euo pipefail
+        
+        echo "GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}"
 
         # Mask every secret value before anything else can print it.
         while IFS= read -r value; do
@@ -71,7 +80,6 @@ runs:
         done < <(jq -r '.[] | select(. != null)' <<< "$SECRETS_JSON")
 
         MERGED=$(jq -n --argjson env_vars "$ENV_VARS_JSON" --argjson secrets "$SECRETS_JSON" '$env_vars * $secrets')
-        echo "Merged configuration: $MERGED"
         get() {
           jq -r --arg k "$1" '.[$k] // empty' <<< "$MERGED"
         }
@@ -83,12 +91,10 @@ runs:
         known_keys=(
           FOLDER_ID CLOUD_PROVIDER GCP_REGION GCP_ZONE ORGANIZATION_SHORT_NAME
           GCP_PROJECT_ID IMPERSONATE_SERVICE_ACCOUNT BILLING_ACCOUNT GCP_SEED_PROJECT
-          GCP_SERVICE_ACCOUNT GCP_WORKLOAD_IDENTITY_PROVIDER GITHUB_REPOSITORY_OWNER
-          VPCSC_PERIMETER_NAME ENVIRONMENT TERRAFORM_BUCKET ORGANIZATION_NAME
+          GCP_SERVICE_ACCOUNT GCP_WORKLOAD_IDENTITY_PROVIDER VPCSC_PERIMETER_NAME ENVIRONMENT TERRAFORM_BUCKET ORGANIZATION_NAME
           ORGANIZATION_ID REPO_ADMIN_TOKEN GENESIS_API_ACCESS
         )
         for key in "${known_keys[@]}"; do
-          echo "Resolved $key=$(get "$key")"
           declare "$key=$(get "$key")"
         done
 
@@ -97,7 +103,7 @@ runs:
         GITHUB_REPO_NAME="$(get GITHUB_REPO_NAME)"
         TERRAFORM_OUTPUT_DIR="$(get TERRAFORM_OUTPUT_DIR)"; TERRAFORM_OUTPUT_DIR="${TERRAFORM_OUTPUT_DIR:-$DEFAULT_TERRAFORM_OUTPUT_DIR}"
         TERRAFORM_VERSION="$(get TERRAFORM_VERSION)"; TERRAFORM_VERSION="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
-        optional_keys=(GENESIS_API_ACCESS USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION)
+        optional_keys=(GENESIS_API_ACCESS USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION GITHUB_REPOSITORY_OWNER)
 
         # Write every resolved key to $GITHUB_ENV (heredoc form, safe for values with special characters)
         # so later steps can read them via the `env` context.
