@@ -57,6 +57,13 @@ inputs:
     required: false
     default: ${{ github.repository_owner }}
 
+  github_repository_owner_id:
+    description: >
+      The ID of the owner of the repository where this action is being run. This is used to resolve the GITHUB_REPO_NAME
+      if it is not provided in env_vars or secrets. Defaults to the ID of the owner of the repository where this action is run.
+    required: false
+    default: ${{ github.repository_owner_id }}
+
 runs:
   using: composite
   steps:
@@ -124,6 +131,7 @@ runs:
                | to_entries[] | "\(.key)=\(.value)"' <<< "$MERGED" > "${{ runner.temp }}/genesis.env"
         
         echo "GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}" >> "${{ runner.temp }}/genesis.env"
+        echo "GITHUB_REPOSITORY_OWNER_ID=${{ inputs.github_repository_owner_id }}" >> "${{ runner.temp }}/genesis.env"
 
     - name: Log in to GHCR
       uses: docker/login-action@v3
