@@ -103,7 +103,7 @@ runs:
         GITHUB_REPO_NAME="$(get GITHUB_REPO_NAME)"
         TERRAFORM_OUTPUT_DIR="$(get TERRAFORM_OUTPUT_DIR)"; TERRAFORM_OUTPUT_DIR="${TERRAFORM_OUTPUT_DIR:-$DEFAULT_TERRAFORM_OUTPUT_DIR}"
         TERRAFORM_VERSION="$(get TERRAFORM_VERSION)"; TERRAFORM_VERSION="${TERRAFORM_VERSION:-$DEFAULT_TERRAFORM_VERSION}"
-        optional_keys=(GENESIS_API_ACCESS USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION GITHUB_REPOSITORY_OWNER)
+        optional_keys=(GENESIS_API_ACCESS USERNAME GITHUB_REPO_NAME TERRAFORM_OUTPUT_DIR TERRAFORM_VERSION)
 
         # Write every resolved key to $GITHUB_ENV (heredoc form, safe for values with special characters)
         # so later steps can read them via the `env` context.
@@ -122,6 +122,8 @@ runs:
         # not the action's own plumbing (tokens, directories, versions).
         jq -r 'del(.GENESIS_API_ACCESS, .USERNAME, .REPO_ADMIN_TOKEN, .TERRAFORM_OUTPUT_DIR, .TERRAFORM_VERSION, .GITHUB_REPO_NAME)
                | to_entries[] | "\(.key)=\(.value)"' <<< "$MERGED" > "${{ runner.temp }}/genesis.env"
+        
+        echo "GITHUB_REPOSITORY_OWNER=${{ inputs.github_repository_owner }}" >> "${{ runner.temp }}/genesis.env"
 
     - name: Log in to GHCR
       uses: docker/login-action@v3
