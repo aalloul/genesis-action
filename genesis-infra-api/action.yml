@@ -182,7 +182,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: TF_LOG=INFO terraform plan -out=tfplan
+      run: terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
@@ -191,7 +191,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: TF_LOG=INFO terraform apply tfplan
+      run: terraform apply tfplan
 
     - name: Store Terraform outputs as GitHub variables and secrets
       shell: bash
