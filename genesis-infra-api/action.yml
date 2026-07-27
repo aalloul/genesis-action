@@ -168,6 +168,7 @@ runs:
       uses: hashicorp/setup-terraform@v4
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
+        terraform_wrapper: false
 
     - name: Terraform Init & validate
       shell: bash
@@ -181,7 +182,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: TF_LOG=DEBUG terraform plan -out=tfplan
+      run: TF_LOG=INFO terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
@@ -190,7 +191,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: TF_LOG=DEBUG terraform apply tfplan
+      run: TF_LOG=INFO terraform apply tfplan
 
     - name: Store Terraform outputs as GitHub variables and secrets
       shell: bash
