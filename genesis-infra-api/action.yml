@@ -181,7 +181,7 @@ runs:
       env:
         GITHUB_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         GITHUB_OWNER: ${{ github.repository_owner }}
-      run: terraform plan -out=tfplan
+      run: TF_LOG=DEBUG terraform plan -out=tfplan
 
     - name: Terraform apply
       shell: bash
