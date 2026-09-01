@@ -23,6 +23,11 @@
         "env_scoped": false
     },
     {
+        "tf_key": "organization_name",
+        "gh_name": "ORGANIZATION_NAME",
+        "env_scoped": false
+    },
+    {
       "tf_key": "project_id",
       "gh_name": "PROJECT_ID",
       "env_scoped": true
