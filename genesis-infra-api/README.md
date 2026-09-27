@@ -74,9 +74,9 @@ These are the keys the action looks for inside the merged `env_vars`/`secrets` o
 | `REPO_ADMIN_TOKEN` | — | GitHub Personal Access Token used to create/update GitHub Actions variables and secrets after apply. Required if `run_terraform_apply` is `true`. See [required PAT permissions](#required-pat-permissions) below. |
 | `GHCR_TOKEN` | `github.token` | GitHub token with `packages:read`. Used to pull the genesis-api image from GHCR. |
 | `USERNAME` | `github.actor` | GitHub username associated with `GHCR_TOKEN`. |
-| `GITHUB_REPO_NAME` | — | Name of the repo where environment variables & secrets will be stored. If omitted, read from the Terraform output key `github_repo_name`. |
+| `GITHUB_REPO_NAME` | — | Name of the repo where environment variables & secrets will be stored. If omitted, read from the Terraform output key `github_repo_name`; if that output doesn't exist either (e.g. `create-basic-infra`, which doesn't create a repo), falls back to the repo the action is running in. |
 | `TERRAFORM_OUTPUT_DIR` | `terraform_output_dir` | Directory (relative to repo root) where generated Terraform files are written. |
-| `TERRAFORM_VERSION` | `1.14.8` | Terraform version to install. |
+| `TERRAFORM_VERSION` | `1.16.4` | Terraform version to install. |
 
 ## Storing Terraform outputs as GitHub variables and secrets
 

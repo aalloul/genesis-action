@@ -75,7 +75,7 @@ runs:
         DEFAULT_GENESIS_API_ACCESS: "someVal"
         DEFAULT_USERNAME: ${{ github.actor }}
         DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
-        DEFAULT_TERRAFORM_VERSION: 1.14.8
+        DEFAULT_TERRAFORM_VERSION: 1.16.4
       run: |
         set -euo pipefail
         
@@ -201,6 +201,7 @@ runs:
         GH_TOKEN: ${{ env.REPO_ADMIN_TOKEN }}
         ENVIRONMENT: ${{ env.ENVIRONMENT }}
         REPO: ${{ env.GITHUB_REPO_NAME }}
+        CURRENT_REPO: ${{ github.repository }}
       run: |
         if [[ '${{ inputs.action }}' == 'create-basic-infra' ]]; then
           export MAPPING_FILE=${{ github.action_path }}/base_infra_mappings.json
@@ -214,8 +215,16 @@ runs:
         fi
         echo "Using mapping file: $MAPPING_FILE"
 
+        # Fall back, in order, to: the Terraform output (if the module produced a
+        # github_repo_name, e.g. create-data-product) then the repo the action is
+        # running in (e.g. create-basic-infra, which never creates a GitHub repo).
+        # Read via -json/jq rather than `-raw` so a missing key doesn't abort the
+        # step (composite run steps use `bash -e`).
         if [[ -z "$REPO" ]]; then
-          REPO=$(terraform output -raw github_repo_name)
+          REPO=$(terraform output -json | jq -r '.github_repo_name.value // empty')
+        fi
+        if [[ -z "$REPO" ]]; then
+          REPO="$CURRENT_REPO"
         fi
         export REPO
 
