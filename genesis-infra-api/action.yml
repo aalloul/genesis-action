@@ -75,7 +75,7 @@ runs:
         DEFAULT_GENESIS_API_ACCESS: "someVal"
         DEFAULT_USERNAME: ${{ github.actor }}
         DEFAULT_TERRAFORM_OUTPUT_DIR: ${{ github.actor }}
-        DEFAULT_TERRAFORM_VERSION: 1.14.8
+        DEFAULT_TERRAFORM_VERSION: 1.16.4
       run: |
         set -euo pipefail
         

@@ -76,7 +76,7 @@ These are the keys the action looks for inside the merged `env_vars`/`secrets` o
 | `USERNAME` | `github.actor` | GitHub username associated with `GHCR_TOKEN`. |
 | `GITHUB_REPO_NAME` | — | Name of the repo where environment variables & secrets will be stored. If omitted, read from the Terraform output key `github_repo_name`. |
 | `TERRAFORM_OUTPUT_DIR` | `terraform_output_dir` | Directory (relative to repo root) where generated Terraform files are written. |
-| `TERRAFORM_VERSION` | `1.14.8` | Terraform version to install. |
+| `TERRAFORM_VERSION` | `1.16.4` | Terraform version to install. |
 
 ## Storing Terraform outputs as GitHub variables and secrets
 
