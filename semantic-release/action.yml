@@ -1,0 +1,68 @@
+name: 'Genesis – Semantic Release'
+description: >
+  Runs semantic-release and exposes the computed version.
+  • main   → stable release: creates vX.Y.Z tag + GitHub Release.
+  • other  → pre-release: creates vX.Y.Z-rc.N tag + GitHub pre-release.
+  The calling job must check out the repository with `fetch-depth: 0` and have `contents: write`.
+
+inputs:
+  github_token:
+    description: 'GitHub token with contents:write permissions.'
+    required: true
+
+  config_file:
+    description: >
+      Optional path to a semantic-release config, used as the base configuration. Defaults to the
+      config bundled with this action. A `.releaserc*` in the calling repository still takes precedence
+      over it. The config must keep an @semantic-release/exec step writing the next version to `.next-version`,
+      which is how this action captures the version.
+    required: false
+    default: ""
+
+outputs:
+  version:
+    description: 'Computed semver string (e.g. "v1.2.0" or "v1.2.0-rc.1")'
+    value: ${{ steps.release.outputs.version }}
+  released:
+    description: '"true" when a release was published, "false" otherwise'
+    value: ${{ steps.release.outputs.released }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '22'
+
+    - name: Install semantic-release
+      shell: bash
+      run: |
+        npm install --no-save \
+          semantic-release@24 \
+          @semantic-release/commit-analyzer@13 \
+          @semantic-release/release-notes-generator@14 \
+          @semantic-release/github@12 \
+          @semantic-release/exec@7
+
+    - name: Publish release and capture version
+      id: release
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        CONFIG_FILE: ${{ inputs.config_file }}
+        DEFAULT_CONFIG_FILE: ${{ github.action_path }}/releaserc.json
+      run: |
+        npx semantic-release --extends "${CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
+
+        VERSION=$(cat .next-version 2>/dev/null || echo "")
+        rm -f .next-version
+
+        if [ -n "$VERSION" ]; then
+          echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "released=true"    >> "$GITHUB_OUTPUT"
+          echo "✅ Released: $VERSION"
+        else
+          echo "released=false" >> "$GITHUB_OUTPUT"
+          echo "ℹ️  No releasable commits — skipping release"
+        fi

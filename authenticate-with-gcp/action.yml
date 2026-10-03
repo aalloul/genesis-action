@@ -24,9 +24,12 @@ inputs:
 
   token_format:
     description: >
-      The format of the generated token. Use "access_token" for most GCP API
+      The format of the generated token. Only used together with `service_account`.
+      Use "access_token" (the default when a service account is set) for most GCP API
       calls and Terraform. Use "id_token" when calling Cloud Run or other
-      services that require an OIDC ID token.
+      services that require an OIDC ID token. Leave empty, with no service account,
+      for direct Workload Identity Federation (no token is generated, credentials are
+      exposed to later steps as Application Default Credentials).
     required: false
     default: ""
 
@@ -42,23 +45,30 @@ outputs:
   access_token:
     description: >
       The GCP access token. Only populated when token_format is "access_token".
-    value: ${{ steps.auth.outputs.access_token }}
+    value: ${{ steps.wif_auth_impersonation_access_token.outputs.access_token }}
 
 runs:
   using: composite
   steps:
+    - name: Validate inputs
+      shell: bash
+      env:
+        SERVICE_ACCOUNT: ${{ inputs.service_account }}
+        TOKEN_FORMAT: ${{ inputs.token_format }}
+      run: |
+        case "$TOKEN_FORMAT" in
+          ""|access_token|id_token) ;;
+          *) echo "::error::Unsupported token_format '$TOKEN_FORMAT'. Use 'access_token' or 'id_token'."; exit 1 ;;
+        esac
+        if [[ -z "$SERVICE_ACCOUNT" && -n "$TOKEN_FORMAT" ]]; then
+          echo "::error::token_format requires service_account. Omit token_format for direct Workload Identity Federation."
+          exit 1
+        fi
+
     - name: Direct WIF auth
       id: direct_wif_auth
       uses: google-github-actions/auth@v2
-      if: ${{ inputs.service_account == '' && inputs.token_format == '' }}
-      with:
-        workload_identity_provider: ${{ inputs.workload_identity_provider }}
-        project_id: ${{ inputs.gcp_project }}
-
-    - name: WIF auth through a service account impersonation
-      id: wif_auth_impersonation
-      uses: google-github-actions/auth@v2
-      if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
+      if: ${{ inputs.service_account == '' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         project_id: ${{ inputs.gcp_project }}
@@ -66,12 +76,12 @@ runs:
     - name: WIF auth through impersonation with access token
       id: wif_auth_impersonation_access_token
       uses: google-github-actions/auth@v2
-      if: ${{ inputs.service_account != '' && inputs.token_format == 'access_token' }}
+      if: ${{ inputs.service_account != '' && inputs.token_format != 'id_token' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         project_id: ${{ inputs.gcp_project }}
         service_account: ${{ inputs.service_account }}
-        token_format: ${{ inputs.token_format }}
+        token_format: access_token
 
     - name: WIF auth through impersonation with ID token
       id: wif_auth_impersonation_id_token
@@ -81,5 +91,5 @@ runs:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
         project_id: ${{ inputs.gcp_project }}
         service_account: ${{ inputs.service_account }}
-        token_format: ${{ inputs.token_format }}
+        token_format: id_token
         id_token_audience: ${{ inputs.audience }}

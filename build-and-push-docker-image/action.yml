@@ -1,0 +1,134 @@
+name: 'Genesis – Build and Push Docker Image'
+description: >
+  Builds a Docker image and pushes it to a container registry, tagged with the given (semantic) version.
+  Works with Google Artifact Registry (the default login: `oauth2accesstoken` + a GCP access token from
+  `authenticate-with-gcp`) and with any username/password registry such as GHCR.
+  Without a Dockerfile this action is a no-op.
+
+inputs:
+  repository_url:
+    description: >
+      URL of the registry repository the image is pushed to, e.g.
+      "europe-west1-docker.pkg.dev/my-project/my-repo" (typically `vars.ARTIFACT_REGISTRY_REPOSITORY_URL`
+      of a data product repository) or "ghcr.io/my-org".
+    required: true
+
+  version:
+    description: >
+      Image tag, expected to be a semantic version (e.g. the `version` output of the `semantic-release` action).
+      Only this one tag is pushed (no `latest`). Data product Artifact Registry repositories have immutable tags,
+      so every tag can only be pushed once.
+    required: true
+
+  registry_username:
+    description: >
+      Username for the registry login. The default, "oauth2accesstoken", is what Google Artifact Registry
+      expects with an access token. Use e.g. `github.actor` for GHCR.
+    required: false
+    default: "oauth2accesstoken"
+
+  registry_password:
+    description: >
+      Password for the registry login: the `access_token` output of `authenticate-with-gcp` for Google
+      Artifact Registry, or `secrets.GITHUB_TOKEN` (with `packages: write`) for GHCR.
+    required: true
+
+  image_name:
+    description: 'Name of the image inside the repository. Defaults to the name of the GitHub repository.'
+    required: false
+    default: ""
+
+  context:
+    description: 'Docker build context, relative to the repository root.'
+    required: false
+    default: "."
+
+  dockerfile:
+    description: 'Path to the Dockerfile, relative to the repository root.'
+    required: false
+    default: "Dockerfile"
+
+  build_args:
+    description: 'Newline-separated list of build arguments (KEY=VALUE).'
+    required: false
+    default: ""
+
+  skip_if_no_dockerfile:
+    description: >
+      If true, the action exits successfully without doing anything when the Dockerfile does not exist.
+      If false, a missing Dockerfile fails the action.
+    required: false
+    default: "true"
+
+  push:
+    description: 'If false, the image is built but not pushed.'
+    required: false
+    default: "true"
+
+outputs:
+  image:
+    description: 'Full reference of the image, including its tag. Empty when nothing was built.'
+    value: ${{ steps.image.outputs.image }}
+  digest:
+    description: 'Digest of the pushed image. Empty when nothing was pushed.'
+    value: ${{ steps.build.outputs.digest }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check for Dockerfile
+      id: check
+      shell: bash
+      env:
+        DOCKERFILE: ${{ inputs.dockerfile }}
+        SKIP_IF_NO_DOCKERFILE: ${{ inputs.skip_if_no_dockerfile }}
+      run: |
+        if [[ -f "$DOCKERFILE" ]]; then
+          echo "build=true" >> "$GITHUB_OUTPUT"
+        elif [[ "$SKIP_IF_NO_DOCKERFILE" == "true" ]]; then
+          echo "::notice::No Dockerfile at '$DOCKERFILE', skipping Docker build."
+          echo "build=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "::error::Dockerfile not found at '$DOCKERFILE'."
+          exit 1
+        fi
+
+    - name: Resolve image reference
+      id: image
+      if: ${{ steps.check.outputs.build == 'true' }}
+      shell: bash
+      env:
+        REPOSITORY_URL: ${{ inputs.repository_url }}
+        IMAGE_NAME: ${{ inputs.image_name }}
+        VERSION: ${{ inputs.version }}
+        DEFAULT_IMAGE_NAME: ${{ github.event.repository.name }}
+      run: |
+        set -euo pipefail
+        REPOSITORY_URL="${REPOSITORY_URL%/}"
+        echo "registry=${REPOSITORY_URL%%/*}" >> "$GITHUB_OUTPUT"
+        echo "image=${REPOSITORY_URL}/${IMAGE_NAME:-$DEFAULT_IMAGE_NAME}:${VERSION}" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Docker Buildx
+      if: ${{ steps.check.outputs.build == 'true' }}
+      uses: docker/setup-buildx-action@v4
+
+    - name: Log in to the registry
+      if: ${{ steps.check.outputs.build == 'true' && inputs.push == 'true' }}
+      uses: docker/login-action@v4
+      with:
+        registry: ${{ steps.image.outputs.registry }}
+        username: ${{ inputs.registry_username }}
+        password: ${{ inputs.registry_password }}
+
+    - name: Build and push
+      id: build
+      if: ${{ steps.check.outputs.build == 'true' }}
+      uses: docker/build-push-action@v7
+      with:
+        context: ${{ inputs.context }}
+        file: ${{ inputs.dockerfile }}
+        build-args: ${{ inputs.build_args }}
+        push: ${{ inputs.push }}
+        tags: ${{ steps.image.outputs.image }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
