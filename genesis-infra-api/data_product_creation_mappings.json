@@ -53,8 +53,8 @@
       "env_scoped": false
     },
     {
-      "tf_key": "composer_service_account_email",
-      "gh_name": "COMPOSER_SERVICE_ACCOUNT_EMAIL",
+      "tf_key": "dp_composer_service_account_email",
+      "gh_name": "DP_COMPOSER_SERVICE_ACCOUNT_EMAIL",
       "env_scoped": true
     },
     {
