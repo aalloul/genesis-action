@@ -154,9 +154,9 @@ The job must check out the repository with `fetch-depth: 0` and have `contents: 
 
 ## `build-and-push-docker-image`
 
-Builds a data product's Docker image and pushes it to the data product's repository in the central Artifact Registry. A Docker image is optional for a data product: **without a Dockerfile this action does nothing** (set `skip_if_no_dockerfile: "false"` to fail instead).
+Builds a Docker image and pushes it to a container registry: the data product's repository in the central Google Artifact Registry, or any username/password registry such as GHCR. A Docker image is optional for a data product: **without a Dockerfile this action does nothing** (set `skip_if_no_dockerfile: "false"` to fail instead).
 
-The Artifact Registry repositories have **immutable tags**, so each tag can be pushed only once. Use the version computed by [`semantic-release`](#semantic-release) as the tag.
+Only the given `version` is pushed as a tag (no `latest`). Data product Artifact Registry repositories have **immutable tags**, so each tag can be pushed only once. Use the version computed by [`semantic-release`](#semantic-release) as the tag.
 
 ### Prerequisites
 
@@ -201,7 +201,19 @@ jobs:
         with:
           repository_url: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY_URL }}
           version: ${{ steps.release.outputs.version }}
-          access_token: ${{ steps.auth.outputs.access_token }}
+          registry_password: ${{ steps.auth.outputs.access_token }}
+```
+
+For GHCR, pass the registry credentials explicitly (the job needs `packages: write`):
+
+```yaml
+      - uses: aalloul/genesis-action/build-and-push-docker-image@v1
+        with:
+          repository_url: ghcr.io/${{ github.repository_owner }}
+          image_name: my-image
+          version: ${{ steps.release.outputs.version }}
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Inputs
@@ -210,7 +222,8 @@ jobs:
 |---|---|---|---|
 | `repository_url` | ✅ | — | Artifact Registry repository URL, e.g. `europe-west1-docker.pkg.dev/my-project/my-repo` |
 | `version` | ✅ | — | Image tag, typically the `semantic-release` `version` output |
-| `access_token` | ✅ | — | GCP access token (`access_token` output of `authenticate-with-gcp`) |
+| `registry_password` | ✅ | — | Registry password: the `access_token` output of `authenticate-with-gcp` for Artifact Registry, or `GITHUB_TOKEN` for GHCR |
+| `registry_username` | ❌ | `oauth2accesstoken` | Registry username (`github.actor` for GHCR) |
 | `image_name` | ❌ | GitHub repo name | Image name inside the repository |
 | `context` | ❌ | `.` | Docker build context |
 | `dockerfile` | ❌ | `Dockerfile` | Path to the Dockerfile |

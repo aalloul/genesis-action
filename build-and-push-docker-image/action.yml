@@ -1,26 +1,36 @@
 name: 'Genesis – Build and Push Docker Image'
 description: >
-  Builds a data product's Docker image and pushes it to its repository in the central Artifact Registry,
-  tagged with the given (semantic) version. The caller must already be authenticated with GCP as a
-  service account that can write to the repository (see `authenticate-with-gcp`, with `token_format: access_token`).
-  The Docker image is optional: without a Dockerfile this action is a no-op.
+  Builds a Docker image and pushes it to a container registry, tagged with the given (semantic) version.
+  Works with Google Artifact Registry (the default login: `oauth2accesstoken` + a GCP access token from
+  `authenticate-with-gcp`) and with any username/password registry such as GHCR.
+  Without a Dockerfile this action is a no-op.
 
 inputs:
   repository_url:
     description: >
-      URL of the Artifact Registry repository, e.g. "europe-west1-docker.pkg.dev/my-project/my-repo".
-      Typically `vars.ARTIFACT_REGISTRY_REPOSITORY_URL` of the data product repository.
+      URL of the registry repository the image is pushed to, e.g.
+      "europe-west1-docker.pkg.dev/my-project/my-repo" (typically `vars.ARTIFACT_REGISTRY_REPOSITORY_URL`
+      of a data product repository) or "ghcr.io/my-org".
     required: true
 
   version:
     description: >
       Image tag, expected to be a semantic version (e.g. the `version` output of the `semantic-release` action).
-      The Artifact Registry repositories have immutable tags, so every tag can only be pushed once.
+      Only this one tag is pushed (no `latest`). Data product Artifact Registry repositories have immutable tags,
+      so every tag can only be pushed once.
     required: true
 
-  access_token:
+  registry_username:
     description: >
-      GCP access token used to log in to Artifact Registry (the `access_token` output of `authenticate-with-gcp`).
+      Username for the registry login. The default, "oauth2accesstoken", is what Google Artifact Registry
+      expects with an access token. Use e.g. `github.actor` for GHCR.
+    required: false
+    default: "oauth2accesstoken"
+
+  registry_password:
+    description: >
+      Password for the registry login: the `access_token` output of `authenticate-with-gcp` for Google
+      Artifact Registry, or `secrets.GITHUB_TOKEN` (with `packages: write`) for GHCR.
     required: true
 
   image_name:
@@ -102,13 +112,13 @@ runs:
       if: ${{ steps.check.outputs.build == 'true' }}
       uses: docker/setup-buildx-action@v4
 
-    - name: Log in to Artifact Registry
+    - name: Log in to the registry
       if: ${{ steps.check.outputs.build == 'true' && inputs.push == 'true' }}
       uses: docker/login-action@v4
       with:
         registry: ${{ steps.image.outputs.registry }}
-        username: oauth2accesstoken
-        password: ${{ inputs.access_token }}
+        username: ${{ inputs.registry_username }}
+        password: ${{ inputs.registry_password }}
 
     - name: Build and push
       id: build
