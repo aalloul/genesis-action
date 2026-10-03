@@ -46,37 +46,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-
-      - name: Install semantic-release
-        shell: bash
-        run: |
-          npm install --no-save \
-            semantic-release@24 \
-            @semantic-release/commit-analyzer@13 \
-            @semantic-release/release-notes-generator@14 \
-            @semantic-release/github@12 \
-            @semantic-release/exec@7
-
-      - name: Publish release and capture version
+      - name: Publish release
         id: release
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npx semantic-release
-  
-          VERSION=$(cat .next-version 2>/dev/null || echo "")
-          rm -f .next-version
-  
-          if [ -n "$VERSION" ]; then
-            echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
-            echo "released=true"    >> "$GITHUB_OUTPUT"
-            echo "✅ Released: $VERSION"
-          else
-            echo "released=false" >> "$GITHUB_OUTPUT"
-            echo "ℹ️  No releasable commits — skipping release"
-          fi
+        uses: ./semantic-release
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
