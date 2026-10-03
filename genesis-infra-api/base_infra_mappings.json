@@ -36,6 +36,11 @@
       "tf_key": "bigquery_project_name",
       "gh_name": "BIGQUERY_PROJECT_NAME",
       "env_scoped": true
+    },
+    {
+      "tf_key": "artifact_registry_project_id",
+      "gh_name": "ARTIFACT_REGISTRY_PROJECT_ID",
+      "env_scoped": true
     }
   ]
 }

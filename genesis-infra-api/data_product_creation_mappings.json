@@ -53,8 +53,8 @@
       "env_scoped": false
     },
     {
-      "tf_key": "composer_service_account_email",
-      "gh_name": "COMPOSER_SERVICE_ACCOUNT_EMAIL",
+      "tf_key": "dp_composer_service_account_email",
+      "gh_name": "DP_COMPOSER_SERVICE_ACCOUNT_EMAIL",
       "env_scoped": true
     },
     {
@@ -85,6 +85,16 @@
     {
       "tf_key": "bigquery_dataset_id",
       "gh_name": "BIGQUERY_DATASET_ID",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "artifact_registry_repository_name",
+      "gh_name": "ARTIFACT_REGISTRY_REPOSITORY_NAME",
+      "env_scoped": true
+    },
+    {
+      "tf_key": "artifact_registry_repository_url",
+      "gh_name": "ARTIFACT_REGISTRY_REPOSITORY_URL",
       "env_scoped": true
     }
   ]
