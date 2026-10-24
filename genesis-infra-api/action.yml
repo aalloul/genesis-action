@@ -134,7 +134,7 @@ runs:
         echo "GITHUB_REPOSITORY_OWNER_ID=${{ inputs.github_repository_owner_id }}" >> "${{ runner.temp }}/genesis.env"
 
     - name: Log in to GHCR
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4.7.0
       with:
         registry: ghcr.io
         username: ${{ env.USERNAME }}
@@ -158,14 +158,14 @@ runs:
           --output-dir "/workspace/${{ env.TERRAFORM_OUTPUT_DIR }}"
 
     - name: Store generated Terraform files as an artifact
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@v7.0.2
       if: ${{ inputs.debug == 'true' }}
       with:
         name: basic-infra-terraform
         path: '${{ github.workspace }}/${{ env.TERRAFORM_OUTPUT_DIR }}'
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v4
+      uses: hashicorp/setup-terraform@v4.0.1
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false

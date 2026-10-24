@@ -67,7 +67,7 @@ runs:
 
     - name: Direct WIF auth
       id: direct_wif_auth
-      uses: google-github-actions/auth@v2
+      uses: google-github-actions/auth@v3
       if: ${{ inputs.service_account == '' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
@@ -75,7 +75,7 @@ runs:
 
     - name: WIF auth through impersonation with access token
       id: wif_auth_impersonation_access_token
-      uses: google-github-actions/auth@v2
+      uses: google-github-actions/auth@v3
       if: ${{ inputs.service_account != '' && inputs.token_format != 'id_token' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
@@ -85,7 +85,7 @@ runs:
 
     - name: WIF auth through impersonation with ID token
       id: wif_auth_impersonation_id_token
-      uses: google-github-actions/auth@v2
+      uses: google-github-actions/auth@v3
       if: ${{ inputs.service_account != '' && inputs.token_format == 'id_token' }}
       with:
         workload_identity_provider: ${{ inputs.workload_identity_provider }}
