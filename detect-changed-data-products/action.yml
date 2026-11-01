@@ -14,6 +14,14 @@ inputs:
       Only used when event_name is workflow_dispatch.
     required: false
     default: ""
+  ref_type:
+    description: "The GitHub ref type (github.ref_type): branch or tag"
+    required: false
+    default: ""
+  ref_name:
+    description: "The GitHub ref name (github.ref_name)"
+    required: false
+    default: ""
 
 outputs:
   config_files:
@@ -34,6 +42,8 @@ runs:
       env:
         EVENT_NAME: ${{ inputs.event_name }}
         INPUT_CONFIG_FILES: ${{ inputs.input_config_files }}
+        REF_TYPE: ${{ inputs.ref_type }}
+        REF_NAME: ${{ inputs.ref_name }}
       run: |
         if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
           if [[ -z "$INPUT_CONFIG_FILES" ]]; then
@@ -46,6 +56,15 @@ runs:
             exit 1
           fi
           files=$(echo "$INPUT_CONFIG_FILES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | grep -v '^$' | sed 's|^|data_products/|' | jq -R . | jq -sc .)
+        elif [[ "$REF_TYPE" == "tag" ]]; then
+          # Tag (prod release): changes since the previous tag, or everything if this is the first tag.
+          if prev_tag=$(git describe --tags --abbrev=0 "${REF_NAME}^" 2>/dev/null); then
+            echo "INFO: Diffing against previous tag $prev_tag"
+            files=$(git diff --name-only "$prev_tag" HEAD -- data_products/ | { grep '\.yml$' || true; } | jq -R . | jq -sc .)
+          else
+            echo "INFO: No previous tag found, selecting all data product configs"
+            files=$(git ls-files 'data_products/*.yml' 'data_products/**/*.yml' | sort -u | jq -R . | jq -sc .)
+          fi
         else
           files=$(git diff --name-only origin/main HEAD -- data_products/ | { grep '\.yml$' || true; } | jq -R . | jq -sc .)
         fi
